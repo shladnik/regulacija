@@ -1,0 +1,62 @@
+uintptr_t find_free(uintptr_t start, uintptr_t end)
+{
+#if 0 /* this is not needed as long as we don't use stack */
+  while (start < end) {
+    if (*(uint8_t *)start == 0x55) {
+      break;
+    } else {
+      start++;
+    }
+  }
+
+  while (start < end) {
+    if (*(uint8_t *)end   == 0x55) {
+      break;
+    } else {
+      end--;
+    }
+  }
+
+  uintptr_t i;
+  for (i = start; i < end; i++) {
+    if (*(uint8_t *)i != 0x55) {
+      break;
+    }
+  }
+
+  uintptr_t free = i - start;
+  if (free) printf("Free: %d (%x-%x)\n", free, start, i);
+  uintptr_t free1 = i == end ? 0 : find_free(i, end);
+  return MAX(free, free1);
+#else
+  uintptr_t i = start;
+  while (i < end) {
+    if (*(uint8_t *)i != 0x55) {
+      break;
+    } else {
+      i++;
+    }
+  }
+
+  uintptr_t free = i - start;
+  if (free) printf("Free: %d (%x-%x)\n", free, start, i);
+  return free;
+#endif
+}
+
+void stack_check()
+{
+  /* this works as long as we don't use heap */
+  extern uint8_t _end;
+  uintptr_t start = (uintptr_t)&_end;
+  uintptr_t end   = SP;
+  if (find_free(start, end) < 0x8)
+    printf("\n\nLow on RAM\n\n");
+}
+
+void stack_check_init()
+{
+  extern uint8_t _end;
+  uint8_t * end = (uint8_t *)SP;
+  for (uint8_t * i = &_end; i < end; i++) *i = 0x55;
+}

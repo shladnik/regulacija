@@ -1,0 +1,71 @@
+
+
+   (XCK/T0) PB0  | r4      d3 |  PA0 (ADC0)
+       (T1) PB1  | r3      d4 |  PA1 (ADC1)
+(INT2/AIN0) PB2  |         d6 |  PA2 (ADC2)
+ (OC0/AIN1) PB3  | pie     d5 |  PA3 (ADC3)
+       (SS) PB4  | pie    d11 |  PA4 (ADC4)
+     (MOSI) PB5  | led    d12 |  PA5 (ADC5)
+     (MISO) PB6  |        d13 |  PA6 (ADC6)
+      (SCK) PB7  | 1w     d14 |  PA7 (ADC7)
+          RESET  |            |  AREF
+            VCC  |            |  GND
+            GND  |            |  AVCC
+          XTAL2  |            |  PC7 (TOSC2)
+          XTAL1  |            |  PC6 (TOSC1)
+      (RXD) PD0  | urx     r2 |  PC5 (TDI)
+      (TXD) PD1  | utx     r1 |  PC4 (TDO)
+     (INT0) PD2  | d7      r7 |  PC3 (TMS)
+     (INT1) PD3  | d9      r8 |  PC2 (TCK)
+     (OC1B) PD4  | r10     r5 |  PC1 (SDA)
+     (OC1A) PD5  | r9      r6 |  PC0 (SCL)
+     (ICP1) PD6  | r12    r11 |  PD7 (OC2)
+
+d1  - power
+d2  - gnd
+d3  - Tipka desno zgoraj
+d4  - LCD RS
+d5  - Tipka levo zgoraj
+d6  - LCD EN
+d7  - Tipka levo spodaj
+d8  - ??
+d9  - Tipka desno spodaj
+d10 - Tipka desno spodaj
+d11 - LCD D4
+d12 - LCD D5
+d13 - LCD D6
+d14 - LCD D7
+
+Releji (r*):
+1   crpalka dodatna 2
+2   crpalka hlev <-> hisa
+3   ventil hlev <-> hisa
+4   1 ? hisa -> hlev : hlev -> hisa
+5   crpalka pec
+6   crpalka radiatorji
+7   crpalka dodatna 1
+8   crpalka kolektorji
+9   ventil pec
+10  ventil pec 1 ? odpri : zapri
+11  ventil radiatorji
+12  ventil radiatorji 1 ? odpri : zapri
+  
+1 pec z
+2 hisa s
+3 kolektorji
+4 hisa z
+5 pec s
+6 hlev z
+7 radiatorji
+8 hlev s
+
+
+51000001:cebe8a28 (0) // pec z  45
+ff000001:ceceea28 (1) // hisa s 42
+be000001:efce8628 (2) // kolektorji 22
+e9000001:f000c628 (3) // hisa z 48
+05000002:156bce28 (4) // pec s 37
+63000001:efeb7128 (5) // hlev z 52
+90000001:efff4d28 (6) // radiatorji 25
+5d000001:ced06328 (7) // hlev s 40
+
