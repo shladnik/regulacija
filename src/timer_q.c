@@ -1,5 +1,5 @@
 #define MAX_TIMERS 16 /* also used as invalid value */
-#define TIMER_DEBUG 1
+#define TIMER_DEBUG 0
 typedef uint8_t ptr_t;
 
 typedef struct {
