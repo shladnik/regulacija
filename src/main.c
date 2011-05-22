@@ -59,13 +59,7 @@ int main()
   watchdog_start();
   sei();
 
-#if 1
-  int i = 0;
-  while (1) {
-    printf("%04x\n", i++);
-    timer_sleep_s(1);
-  }
-#endif
+  //onewire_search_rom();
 
   lcd_init();
   lprintf(1, 5, "Zaganjam...");
