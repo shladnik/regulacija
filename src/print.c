@@ -1,4 +1,4 @@
-#define SIZE 400
+#define SIZE 256
 #if SIZE <= 256
 typedef uint8_t print_buf_p;
 #else
@@ -8,7 +8,7 @@ typedef uint16_t print_buf_p;
 char print_buf [SIZE]             __attribute__ ((section (".noinit")));
 print_buf_p print_buf_wp __attribute__ ((section (".noinit")));
 print_buf_p print_buf_rp __attribute__ ((section (".noinit")));
-uint8_t print_buf_ovf    __attribute__ ((section (".noinit")));
+uint16_t print_buf_ovf    __attribute__ ((section (".noinit")));
 //volatile bool    print_buf_block  = 0;
 #define print_buf_block 0
 
@@ -94,7 +94,7 @@ int print_buf_putc(char c, FILE * f)
       print_buf_write(c);
     } else {
       if (print_buf_full() || print_buf_ovf) {
-        if (print_buf_ovf < UINT8_MAX)
+        if (print_buf_ovf < UINT16_MAX)
           print_buf_ovf++;
       } else {
         print_buf_write(c);
