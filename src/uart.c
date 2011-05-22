@@ -45,20 +45,15 @@ ISR(USART_RXC_vect)
 #if PLAIN_CONSOLE
   assert(0);
 #else
-  static timer_t prev = 0;
-  timer_t now = timer_now();
-  if (prev != 0) dbg32[3] = MAX(now - prev, dbg32[3]);
-  prev = now;
   if (rx_timer) {
     rx_timer = 0;
-    timer_cancel(rx_reset, 0);
+    timer_cancel(rx_timeout, 0);
   }
 
   bool err = 0;
 
   if (UCSRA & ((1<<FE)|(1<<DOR)|(1<<PE))) { //0x1c;
     rx_ovf_cnt++;
-    printf("ERR: UART RX (%x,%x)\n", rx_state, rx_ovf_cnt);
     err = 1;
   } else {
     uint8_t byte = UDR;
@@ -134,8 +129,7 @@ ISR(USART_RXC_vect)
     rx_reset();
   } else if (rx_state != ADR_SIZE && !(UCSRA & (1 << RXC))) {
     rx_timer = 1;
-    //timer_add(TIMER_S(1000 * 10. / BAUD), rx_timeout, 0, -1);
-    timer_add(TIMER_S(1), rx_timeout, 0, -1);
+    timer_add(TIMER_MS(100), rx_timeout, 0, -1);
   }
 #endif
 }
