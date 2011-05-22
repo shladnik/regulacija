@@ -10,8 +10,8 @@ defines = {
 #  "F_CPU" : "8000000UL",
   "F_CPU" : "9216000UL",
   "PLAIN_CONSOLE" : 0,
-#  "BAUD" : 230400,
-  "BAUD" : 9600,
+  "BAUD" : 230400,
+#  "BAUD" : 9600,
   "__ASSERT_USE_STDERR" : "", # I have my own assert right now anyway
 #  "NDEBUG" : "",
 }

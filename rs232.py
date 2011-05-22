@@ -12,11 +12,8 @@ def loop():
   while 1:
     fifo.put(rs232.read(1)[0])
 
-def get(timeout = 1000 * 10.0/rs232.baudrate):
+def get(timeout = 0.1): #1000 * 10.0/rs232.baudrate):
   return fifo.get(block=True, timeout=timeout)
-
-prev = 0
-dly_max = 0
 
 def put(b):
   if type(b) == type(1):
@@ -24,14 +21,7 @@ def put(b):
   else:
     rs232.write(b)
   # let it breath
-  #time.sleep(1 * 10.0/rs232.baudrate)
-  global prev, dly_max
-  now = time.clock()
-  dly = now - prev;
-  if prev and dly > dly_max:
-    dly_max = dly;
-    print("\n\nMAX delay:", dly_max)
-  prev = now
+  time.sleep(10 * 10.0/rs232.baudrate)
 
 def start(baudrate):
   print("BAUD: ", baudrate)

@@ -22,6 +22,7 @@ typedef enum
   DS18B20_STABLE_S_B, // hlev s
   DS18B20_RADIATOR_D, // radiatorji povratni
   DS18B20_HOUSE_0,    // bojler
+  DS18B20_NEW,        // new
 } DS18B20;
 
 typedef enum {
