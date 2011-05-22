@@ -183,23 +183,24 @@ void onewire_read_l(uint8_t * dat, uint8_t len)
 //
 // ROM commands
 //
-#if 0
-uint64_t * onewire_search_rom()
+void onewire_search_rom()
 {
   printf("Searching for 1-Wire devices...\n");
 
-  uint64_t * device = 0;
+  uint64_t device [16];
   uint8_t nr = 0;
   uint64_t min;
   uint8_t colision = 0;
 
   do {
-    assert(device = realloc(device, (nr + 1)*(sizeof(uint64_t))));
     device[nr] = 0;
 
     min = nr ? (device[nr - 1] & (((uint64_t)1 << colision) - 1)) | ((uint64_t)1 << colision): 0;
 
-    if (onewire_reset()) break;
+    if (onewire_reset()) {
+      printf("None found!\n");
+      break;
+    }
     onewire_write8(0xf0);
 
     for (uint8_t i = 0; i < 64; i++) {
@@ -227,16 +228,14 @@ uint64_t * onewire_search_rom()
                                              (uint8_t)(device[nr] >>  0));
     
     if (*((uint8_t *)&device[nr] + 7) != crc8((uint8_t *)&device[nr], 7))
-      onewire_error(ERR_CRC_ROM);
+      printf("CRC error!\n");
 
     device[++nr] = 0;
   } while (!(min & (uint64_t)1 << colision));
 
   printf("done!\n");
-
-  return device;
 }
-#endif
+
 bool onewire_match_rom(const rom_t rom)
 {
   /* skip rom if pointer is 0 */

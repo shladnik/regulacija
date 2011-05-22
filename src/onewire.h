@@ -22,7 +22,7 @@ uint8_t onewire_read8();
 void onewire_write_l(const uint8_t * const dat, uint8_t len);
 void onewire_read_l(uint8_t * dat, uint8_t len);
 
-rom_t * onewire_search_rom();
+void onewire_search_rom();
 bool onewire_match_rom(const rom_t rom); // 0 for skip
 
 void onewire_0_dly (double t);
