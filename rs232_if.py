@@ -120,7 +120,8 @@ def access(write, adr, dat):
       else:
         break
     except Exception as inst:
-      print("except:", type(inst), ":", inst, "!")
+      print("Protocol error:", type(inst), inst)
+      time.sleep(1)
       if (type(inst) == queue.Empty):
         send(write, adr, dat[0:0xff])
 
@@ -208,32 +209,6 @@ rpn    = name_correct("print_buf_rp")
 ovfn   = name_correct("print_buf_ovf")
 blockn = name_correct("print_buf_block")
 
-def readcon_old():
-  wp = to_int(read_symbol(wpn))
-  rp = to_int(read_symbol(rpn))
-  ovf = 0
-
-  while wp != rp:
-    if   wp > rp:
-      data = access(0, buf + rp, bytearray(wp - rp))
-    elif wp < rp:
-      data = access(0, buf + rp, bytearray(size - rp))
-      if wp > 0:
-        data[len(data):] = access(0, buf, bytearray(wp))
-
-    write_symbol(rpn, wp)
-    rp = wp
-    print(data.decode('utf8', 'ignore'), end="")
-    ovf = to_int(read_symbol(ovfn))
-    wp = to_int(read_symbol(wpn))
-  
-  if ovf:
-    write_symbol(ovfn, 0)
-    print()
-    print()
-    print("### LOST >=", ovf, "CHARACTERS ###")
-    print()
-
 def readcon(max_read=1.0):
   nr = int(max_read * size)
   wp = to_int(read_symbol(wpn))
@@ -270,16 +245,20 @@ def readcon(max_read=1.0):
     print()
 
 
-ovf_cntn = name_correct("ovf_cnt")
-
 rs232.start(defines["BAUD"])
 
 if defines["PLAIN_CONSOLE"]:
-  while 1:
-    print(bytes([rs232.get(timeout = 60)]).decode('utf8', 'ignore'), end="")
+  while 1: print(bytes([rs232.get(timeout = 60)]).decode('utf8', 'ignore'), end="")
 else:
+  ovf_cnt = 0
+  ovf_cnt_regn = name_correct("rx_ovf_cnt")
   while 1:
-    try:
-      readcon()
-    except:
-      raise
+    readcon()
+    #TODO sleep
+    ovf = to_int(read_symbol(ovf_cnt_regn))
+    if ovf:
+      ovf_cnt += ovf
+      print("Overflows detected:", ovf_cnt)
+      write_symbol(ovf_cnt_regn, 0)
+
+
