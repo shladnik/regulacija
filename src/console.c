@@ -14,7 +14,6 @@ void console_loop()
   printf("Hlev       %s %s\n",    temp_uart[DS18B20_STABLE_S_T], temp_uart[DS18B20_STABLE_S_B]);
   printf("Radiatorji %s %s\n",    temp_uart[DS18B20_RADIATOR_U], temp_uart[DS18B20_RADIATOR_D]);
 #else
-  const uint8_t DS18B20_NR = DS18B20_NEW + 1;
   uint8_t temp_uart [DS18B20_NR];
   for (uint8_t i = 0; i < DS18B20_NR; i++)
      temp_uart[i] = TEMP2I(ds18b20_get_temp(i, RESOLUTION_9, 1));
@@ -26,7 +25,7 @@ void console_loop()
   printf("Hisa       %3d %3d %3d\n", temp_uart[DS18B20_HOUSE_0   ], temp_uart[DS18B20_HOUSE_S_T ], temp_uart[DS18B20_HOUSE_S_B ]);
   printf("Hlev       %3d %3d\n",     temp_uart[DS18B20_STABLE_S_T], temp_uart[DS18B20_STABLE_S_B]);
   printf("Radiatorji %3d %3d\n",     temp_uart[DS18B20_RADIATOR_U], temp_uart[DS18B20_RADIATOR_D]);
-  printf("New        %3d\n",         temp_uart[DS18B20_NEW]);
+  printf("New        %3d\n",         temp_uart[DS18B20_STABLE_0]);
 #endif
   if (relay_get(RELAY_VALVE_SH0_EN     )) printf("Ventil SH0        %d\n", relay_get(RELAY_VALVE_SH0_DIR     ));
   if (relay_get(RELAY_VALVE_SH1_EN     )) printf("Ventil SH1        %d\n", relay_get(RELAY_VALVE_SH1_DIR     ));
