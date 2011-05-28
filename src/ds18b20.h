@@ -10,19 +10,8 @@
 #define ERR_RESOLUTION        7
 #define ERR_TEMP              8
 
-typedef enum
-{
-  DS18B20_FURNACE_T,  // pec z
-  DS18B20_HOUSE_S_B,  // hisa s
-  DS18B20_COLLECTOR,  // kolektorji
-  DS18B20_HOUSE_S_T,  // hisa z
-  DS18B20_FURNACE_B,  // pec s
-  DS18B20_STABLE_S_T, // hlev z
-  DS18B20_RADIATOR_U, // radiatorji dvizni
-  DS18B20_STABLE_S_B, // hlev s
-  DS18B20_RADIATOR_D, // radiatorji povratni
-  DS18B20_HOUSE_0,    // bojler
-  DS18B20_NEW,        // new
+typedef enum {
+#include "ds18b20_list.h"
 } DS18B20;
 
 typedef enum {
