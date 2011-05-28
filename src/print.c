@@ -1,4 +1,4 @@
-#define SIZE 256
+#define SIZE 255
 #if SIZE <= 256
 typedef uint8_t print_buf_p;
 #else
