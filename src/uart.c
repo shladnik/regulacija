@@ -107,6 +107,9 @@ ISR(USART_RXC_vect)
             for (uint8_t i = 0; i < rx_dat_len; i++) {
               *(rx_adr+i) = rx_buf[i];
             }
+            if (rx_adr == (uint8_t *)&exexec_func) {
+              sch_add(exexec);
+            }
           }
  
           if (UCSRB & (1 << UDRIE)) {
