@@ -1,0 +1,37 @@
+<root>
+<ds18b20_list>
+  <ds18b20 rom="288abece01000051" cname="FURNACE_T" >
+    Pec izhod
+  </ds18b20>
+  <ds18b20 rom="28eacece010000ff" cname="HOUSE_S_B" >
+    Zalogovnik hisa, spodaj
+  </ds18b20>
+  <ds18b20 rom="2886ceef010000be" cname="COLLECTOR" >
+    Kolektorji
+  </ds18b20>
+  <ds18b20 rom="28c600f0010000e9" cname="HOUSE_S_T" >
+    Zalogovnik hisa, pod bojlerjem
+  </ds18b20>
+  <ds18b20 rom="28ce6b1502000005" cname="FURNACE_B" >
+    Pec vhod
+  </ds18b20>
+  <ds18b20 rom="2871ebef01000063" cname="STABLE_S_T">
+    Zalogovnik hlev, pod bojlerjem
+  </ds18b20>
+  <ds18b20 rom="284dffef01000090" cname="RADIATOR_U">
+    Radiatorji, dvizni vod
+  </ds18b20>
+  <ds18b20 rom="2863d0ce0100005d" cname="STABLE_S_B">
+    Zalogovnik hlev, spodaj
+  </ds18b20>
+  <ds18b20 rom="2868561502000083" cname="RADIATOR_D">
+    Radiatorji, povratni vod
+  </ds18b20>
+  <ds18b20 rom="28d900f001000096" cname="HOUSE_0"   >
+    Zalogovnik hisa, bojler
+  </ds18b20>
+  <ds18b20 rom="282f84dd0200008b" cname="STABLE_0"  >
+    TODO Zalogovnik hlev, zgoraj
+  </ds18b20>
+</ds18b20_list>
+</root>
