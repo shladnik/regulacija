@@ -11,12 +11,8 @@ typedef struct {
 } valve_t;
 
 static const valve_relay_t valve_relay [] PROGMEM = {
-  { RELAY_VALVE_SH0_EN     , RELAY_VALVE_SH0_DIR      },
-  { RELAY_VALVE_SH1_EN     , RELAY_VALVE_SH1_DIR      },
-  { RELAY_VALVE_RADIATOR_EN, RELAY_VALVE_RADIATOR_DIR },
-  { RELAY_VALVE_FURNACE_EN , RELAY_VALVE_FURNACE_DIR  },
+#include "valve_list.c"
 };
-#define VALVE_NR (sizeof(valve_relay)/sizeof(valve_relay_t))
 
 static valve_t valve_tab [VALVE_NR];
 
@@ -38,31 +34,23 @@ inline bool valve_closed(VALVE i)                          __attribute__((always
 void valve_init()
 {
   for (VALVE i = 0; i < VALVE_NR; i++)
-    valve_tab[i].state = VALVE_STATE_MAX/2;
+    valve_tab[i].state = VALVE_STATE_MAX >> 1;
 }
 
 void valve_open(VALVE i)
 {
-  //if (!relay_get(pgm_read_byte(&valve_relay[i].relay_en)) || !relay_get(pgm_read_byte(&valve_relay[i].relay_dir))) printf("open%d\n", i);
   relay_on (pgm_read_byte(&valve_relay[i].relay_dir));
   relay_on (pgm_read_byte(&valve_relay[i].relay_en ));
 }
 
 void valve_close(VALVE i)
 {
-  //if (!relay_get(pgm_read_byte(&valve_relay[i].relay_en)) || relay_get(pgm_read_byte(&valve_relay[i].relay_dir))) printf("close%d\n", i);
   relay_off(pgm_read_byte(&valve_relay[i].relay_dir));
   relay_on (pgm_read_byte(&valve_relay[i].relay_en ));
 }
 
-void valve_print_stop()
-{
-  printf("\nstop%d\n", -1);
-}
-
 void valve_stop(VALVE i)
 {
-  //if (relay_get(pgm_read_byte(&valve_relay[i].relay_en))) sch_add(valve_print_stop, 0);
   relay_off(pgm_read_byte(&valve_relay[i].relay_en ));
   relay_off(pgm_read_byte(&valve_relay[i].relay_dir));
 }
@@ -120,17 +108,20 @@ void valve_close_for(VALVE i, valve_state_t amount)
   valve_control(i);
 }
 
+__attribute__((used))
 valve_state_t valve_get(VALVE i)
 {
   valve_refresh(i);
   return valve_tab[i].state;
 }
 
+__attribute__((used))
 bool valve_opened(VALVE i)
 {
   return valve_tab[i].state > (VALVE_STATE_MAX - VALVE_MIN_MOVE);
 }
 
+__attribute__((used))
 bool valve_closed(VALVE i)
 {
   return valve_tab[i].state < (VALVE_STATE_MIN + VALVE_MIN_MOVE);

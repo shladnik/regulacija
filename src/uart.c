@@ -14,7 +14,6 @@ static uint8_t     rx_dat_len;
 static uint8_t     rx_crc = 0;
 static uint8_t     rx_buf [16];
 static bool        rx_timer = 0;
-static uint8_t     rx_ovf_cnt;
 
 static pac_state_t tx_state = ADR_SIZE;
 static bool        tx_write;
@@ -35,12 +34,13 @@ void rx_timeout()
 {
   rx_timer = 0;
   if (!(UCSRA & (1 << RXC))) {
-    printf("ERR: UART RX timeout\n");
+    DBG static uint8_t rx_timeout;
+    if (rx_timeout < (typeof(rx_timeout))-1) rx_timeout++;
     rx_reset();
   }
 }
 
-ISR(USART_RXC_vect)
+DBG_ISR(USART_RXC_vect, ISR_BLOCK)
 {
 #if PLAIN_CONSOLE
   assert(0);
@@ -52,8 +52,9 @@ ISR(USART_RXC_vect)
 
   bool err = 0;
 
-  if (UCSRA & ((1<<FE)|(1<<DOR)|(1<<PE))) { //0x1c;
-    rx_ovf_cnt++;
+  if (UCSRA & ((1<<FE)|(1<<DOR)|(1<<PE))) {
+    DBG static uint8_t rx_ovf;
+    if (rx_ovf < (typeof(rx_ovf))-1) rx_ovf++;
     err = 1;
   } else {
     uint8_t byte = UDR;
@@ -62,11 +63,15 @@ ISR(USART_RXC_vect)
  
     switch (rx_state) {
       case ADR_SIZE: {
-        rx_write   = byte & 0x80;
-        rx_adr_len = byte & 0x03;
-        rx_adr = 0;
-        i = 1;
-        rx_state = ADR;
+        if ((byte & 0x7f) <= 2) {
+          rx_write   = byte & 0x80;
+          rx_adr_len = byte & 0x03;
+          rx_adr = 0;
+          i = rx_adr_len - 1;
+          rx_state = rx_adr_len ? ADR : DAT_SIZE;
+        } else {
+          err = 1;
+        }
         break;
       }
       case ADR: {
@@ -113,7 +118,8 @@ ISR(USART_RXC_vect)
           }
  
           if (UCSRB & (1 << UDRIE)) {
-            printf("ERR: transmitter busy - ignoring packet\n");
+            DBG static uint8_t tx_busy;
+            if (tx_busy < (typeof(tx_busy))-1) tx_busy++;
           } else {
             tx_write    = rx_write ? 0 : 1;
             tx_adr      = rx_adr;
@@ -129,6 +135,8 @@ ISR(USART_RXC_vect)
   }
  
   if (err) {
+    DBG static uint8_t rx_err;
+    if (rx_err < (typeof(rx_err))-1) rx_err++;
     rx_reset();
   } else if (rx_state != ADR_SIZE && !(UCSRA & (1 << RXC))) {
     rx_timer = 1;
@@ -137,7 +145,7 @@ ISR(USART_RXC_vect)
 #endif
 }
 
-ISR(USART_UDRE_vect)
+DBG_ISR(USART_UDRE_vect, ISR_BLOCK)
 {
 #if PLAIN_CONSOLE
   if (print_buf_empty()) {

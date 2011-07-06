@@ -13,7 +13,6 @@ static const rom_t rom [] PROGMEM = {
 #include "ds18b20_list.c"
 };
 
-#define DS18B20_NR (sizeof(rom)/sizeof(rom_t))
 static ds18b20_t ds18b20_tab [DS18B20_NR]; // zeros are fine - no need to initialize
 
 
@@ -22,9 +21,25 @@ static const uint8_t scratchpad_val = 0xdb;
 
 jmp_buf * ds18b20_err_handler = 0;
 
+enum {
+  ERR_NO_PRESENCE,
+  ERR_CRC_ROM,
+  ERR_SCRATCHPAD_0,
+  ERR_SCRATCHPAD_CRC,
+  ERR_EEPROM_WRITE,
+  ERR_SCRATCHPAD_WRITE,
+  ERR_RESOLUTION,
+  ERR_TEMP,
+  ERR_NR,
+};
+
+DBG uint8_t ds18b20_err_cnt[DS18B20_NR][ERR_NR]; 
+DBG uint8_t ds18b20_max_rty[DS18B20_NR][2];
+
 void ds18b20_error(DS18B20 i, uint8_t errno)
 {
-  printf("ERR: ds18b20(%d) %d\n", i, errno);
+  if (ds18b20_err_cnt[i][errno] < (typeof(ds18b20_err_cnt[i][errno]))-1)
+    ds18b20_err_cnt[i][errno]++;
   assert(ds18b20_err_handler);
   longjmp(*ds18b20_err_handler, errno);
 }
@@ -76,34 +91,6 @@ void ds18b20_convert_t(DS18B20 i)
 
 void ds18b20_read_scratchpad(DS18B20 i, uint8_t * scratchpad)
 {
-#if 0
-  const uint8_t try_max = 3;
-  const uint8_t scratchpad_size = 8;
-  uint8_t try = 0;
- 
-  bool ok = 0;
-  while (!ok) {
-    ok = 1;
-    try++;
-
-    ds18b20_match_rom(i);
-    onewire_write8(0xbe);
-    onewire_read_l(scratchpad, scratchpad_size);
-    
-    uint8_t j = 0;
-    while (scratchpad[j] == 0) if (++j > scratchpad_size) {
-      ok = 0;
-      printf("ERR: ZERO (%dx%d)\n", try, i);
-      if (try >= try_max) ds18b20_error(i, ERR_SCRATCHPAD_0);
-    }
-
-    if (onewire_read8() != crc8(scratchpad, scratchpad_size)) {
-      ok = 0;
-      printf("ERR: CRC  (%dx%d)\n", try, i);
-      if (try >= try_max) ds18b20_error(i, ERR_SCRATCHPAD_CRC);
-    }
-  }
-#else
   const uint8_t scratchpad_size = 8;
  
   ds18b20_match_rom(i);
@@ -116,7 +103,6 @@ void ds18b20_read_scratchpad(DS18B20 i, uint8_t * scratchpad)
 
   if (onewire_read8() != crc8(scratchpad, scratchpad_size))
     ds18b20_error(i, ERR_SCRATCHPAD_CRC);
-#endif
 }
 
 bool ds18b20_check_scratchpad(DS18B20 i, const uint8_t * scratchpad)
@@ -132,27 +118,6 @@ bool ds18b20_check_scratchpad(DS18B20 i, const uint8_t * scratchpad)
 
 void ds18b20_write_scratchpad(DS18B20 i, const uint8_t * scratchpad)
 {
-#if 0
-  const uint8_t try_max = 3;
-  uint8_t try = 0;
-  bool ok = 0;
-
-  while (!ok) {
-    ok = 1;
-    try++;
-    
-    ds18b20_match_rom(i);
-    onewire_write8(0x4e);
-    for (uint8_t i = 0; i < 3; i++)
-      onewire_write8(scratchpad[i]);
-  
-    if (!ds18b20_check_scratchpad(i, scratchpad)) {
-      ok = 0;
-      printf("ERR: Scratchpad write (%dx%d)\n", try, i);
-      if (try >= try_max) ds18b20_error(i, ERR_SCRATCHPAD_WRITE);
-    }
-  }
-#else
   ds18b20_match_rom(i);
   onewire_write8(0x4e);
   for (uint8_t i = 0; i < 3; i++)
@@ -160,7 +125,6 @@ void ds18b20_write_scratchpad(DS18B20 i, const uint8_t * scratchpad)
 
   if (!ds18b20_check_scratchpad(i, scratchpad))
     ds18b20_error(i, ERR_SCRATCHPAD_WRITE);
-#endif
 }
 
 void ds18b20_copy_scratchpad(DS18B20 i)
@@ -259,14 +223,17 @@ temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
   volatile timer_t rst_time = TIMER_MS(10);
 
   jmp_buf tmp_eh;
-  /*int errno = */ setjmp(tmp_eh);
+  uint8_t errno = setjmp(tmp_eh);
   ds18b20_err_handler = &tmp_eh;
   
   temp_t val;
 
-  if (try < rty) {
-    if (try) printf("%d. try ...\n", try + 1);
+  if (ds18b20_max_rty[i][0] < try) {
+    ds18b20_max_rty[i][0] = try;
+    ds18b20_max_rty[i][1] = errno;
+  }
 
+  if (try <= rty) {
     if (try >= 2) {
       ds18b20_reset(rst_time);
       rst_time <<= 1; // double time for next try
@@ -276,7 +243,6 @@ temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
     val = ds18b20_get_temp_bare(i, r);
   } else {
     val = INT16_MAX;
-    printf("ERR: Gave up on %x\n", i);
   }
   
   ds18b20_err_handler = 0;

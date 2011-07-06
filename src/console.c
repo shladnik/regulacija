@@ -1,4 +1,3 @@
-
 void console_loop()
 {
 #if 0
@@ -25,7 +24,6 @@ void console_loop()
   printf("Hisa       %3d %3d %3d\n", temp_uart[DS18B20_HOUSE_0   ], temp_uart[DS18B20_HOUSE_S_T ], temp_uart[DS18B20_HOUSE_S_B ]);
   printf("Hlev       %3d %3d\n",     temp_uart[DS18B20_STABLE_S_T], temp_uart[DS18B20_STABLE_S_B]);
   printf("Radiatorji %3d %3d\n",     temp_uart[DS18B20_RADIATOR_U], temp_uart[DS18B20_RADIATOR_D]);
-  printf("New        %3d\n",         temp_uart[DS18B20_STABLE_0]);
 #endif
   if (relay_get(RELAY_VALVE_SH0_EN     )) printf("Ventil SH0        %d\n", relay_get(RELAY_VALVE_SH0_DIR     ));
   if (relay_get(RELAY_VALVE_SH1_EN     )) printf("Ventil SH1        %d\n", relay_get(RELAY_VALVE_SH1_DIR     ));
@@ -39,4 +37,3 @@ void console_loop()
   printf("Ventil radiatorji: %d/%d\n", (int)(valve_get(VALVE_RADIATOR) >> shift), (int)(VALVE_STATE_MAX >> shift));
   printf("Ventil pec:        %d/%d\n", (int)(valve_get(VALVE_FURNACE ) >> shift), (int)(VALVE_STATE_MAX >> shift));
 }
-

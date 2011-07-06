@@ -15,16 +15,6 @@ void sch_add(func_t func /*, uint8_t level*/)
 {
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
-#if 1
-    if (queue[wp] != 0) {
-      printf("Adding: %x\n", (uintptr_t)func);
-      uint8_t p = rp;
-      do {
-        printf("%x\n", (uintptr_t)queue[p]);
-        p = pinc(p);
-      } while (p != wp);
-    }
-#endif
     assert(queue[wp] == 0);
     queue[wp] = func;
     wp = pinc(wp);
@@ -33,15 +23,15 @@ void sch_add(func_t func /*, uint8_t level*/)
 
 void sch()
 {
-    while (queue[rp]) {
-      func_t func = queue[rp];
-      ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-      {
-        queue[rp] = 0;
-      }
-      rp = pinc(rp);
-      dbg32[1] = timer_now();
-      dbg16[1] = (uintptr_t)func;
-      func();
+  while (queue[rp]) {
+    func_t func = queue[rp];
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+      queue[rp] = 0;
     }
+    rp = pinc(rp);
+    last_sch_func = func;
+    func();
+    last_sch_func = 0;
+  }
 }

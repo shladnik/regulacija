@@ -3,9 +3,9 @@ pumping_state_t pumping_state __attribute__ ((section (".noinit")));
 
 void pumping_loop()
 {
-  temp_t t_stable_s_t = ds18b20_get_temp(DS18B20_STABLE_S_T, RESOLUTION_9, 8);
-  temp_t t_house_0    = ds18b20_get_temp(DS18B20_HOUSE_0   , RESOLUTION_9, 8);
-  temp_t t_house_s_t  = ds18b20_get_temp(DS18B20_HOUSE_S_T , RESOLUTION_9, 8);
+  temp_t t_stable_s_t = ds18b20_get_temp(DS18B20_STABLE_S_T, RESOLUTION_9, 7);
+  temp_t t_house_0    = ds18b20_get_temp(DS18B20_HOUSE_0   , RESOLUTION_9, 7);
+  temp_t t_house_s_t  = ds18b20_get_temp(DS18B20_HOUSE_S_T , RESOLUTION_9, 7);
 
   /* pumping stable <-> house */
   switch (pumping_state) {

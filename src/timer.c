@@ -7,28 +7,53 @@ static uint16_t cmp_high;
 
 void timer_start()
 {
-  TIMSK  |= (1 << TOIE1);
-  TCCR1B = 0x1;
 #if OVF_CHECK
   TCCR2 = 0x7;
-  TIMSK |= (1 << TOIE2);
+#endif
+#if   PRESCALER == 1
+  TCCR1B = 0x1;
+#elif PRESCALER == 8
+  TCCR1B = 0x2;
+#elif PRESCALER == 64
+  TCCR1B = 0x3;
+#elif PRESCALER == 256
+  TCCR1B = 0x4;
+#elif PRESCALER == 1024
+  TCCR1B = 0x5;
+#else
+#error unsupported prescaler
+#endif
+#if OVF_CHECK
+  TIMSK |= (1 << TOIE1) | (1 << TOIE2);
+#else
+  TIMSK |= (1 << TOIE1);
 #endif
 }
 
 #if OVF_CHECK
-ISR(TIMER2_OVF_vect)
+DBG_ISR(TIMER2_OVF_vect, ISR_BLOCK)
 {
-  assert(((uint8_t)high & 0x03) == 0x03);
+#if PRESCALER
+#if PRESCALER > 256
+  static uint16_t high2;
+#else
+  static uint8_t  high2;
+#endif
+  high2 = (high2 + 1) % PRESCALER;
+  if (high2 == 0) {
+#endif
+    assert(((uint8_t)high & 0x03) == 0x03);
+  }
 }
 #endif
 
 void TIMER1_COMPA_vect_trigger()
 {
-  OCR1A = TCNT1 + 0x10;
-  while (!(TIFR & (1 << OCIE1A))) OCR1A--;
+  OCR1A = TCNT1 + (PRESCALER > 1 ? 0x2 : 0x8);
+  while (!(TIFR & (1 << OCIE1A)));
 }
 
-ISR(TIMER1_OVF_vect)
+DBG_ISR(TIMER1_OVF_vect,)
 {
   high++;
   if (en && cmp_high == high) {
@@ -41,7 +66,7 @@ ISR(TIMER1_OVF_vect)
   }
 }
 
-ISR(TIMER1_COMPA_vect)
+DBG_ISR(TIMER1_COMPA_vect,)
 {
   TIMSK &= ~(1 << OCIE1A);
   extern void timer_int();
@@ -60,9 +85,11 @@ timer_t timer_now()
     ovf = TIFR & (1 << TOV1);
     if (ovf) TCNT1_val = TCNT1;
   }
-  if (ovf) high_val++;
+  if (ovf) {
+    high_val++;
+  }
   
-  timer_t ret_val = ((timer_t)high_val << 16) | TCNT1_val;
+  timer_t ret_val = ((timer_t)high_val << 16) | (timer_t)TCNT1_val;
   return ret_val;
 }
 
@@ -70,16 +97,17 @@ bool in_range(timer_t s, timer_t val, timer_t e)
 {
   bool if0 = val >= s;
   bool if1 = val <  e;
-  return s < e ? if0 && if1 :
-                 if0 || if1;
+  return s <= e ? if0 && if1 :
+                  if0 || if1;
 }
 
 void timer_set(timer_t start, timer_t cmp_new)
 {
-  en = 0;
-  TIMSK &= ~(1 << OCIE1A);
+  timer_unset();
 
   OCR1A = (uint16_t)cmp_new;
+  TIFR = 1 << OCIE1A;
+
   timer_t now = timer_now();
   if (in_range(start, cmp_new, now)) {
     TIMER1_COMPA_vect_trigger();

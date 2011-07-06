@@ -20,13 +20,12 @@ void temp_ctl_relay(temp_t temp, RELAY relay, temp_t start, temp_t stop)
 
 void collector_loop()
 {
-  temp_t t_collector  = ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 8);
-  temp_t t_stable_s_b = ds18b20_get_temp(DS18B20_STABLE_S_B, RESOLUTION_9, 8);
+  temp_t t_collector  = ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 7);
+  temp_t t_stable_s_b = ds18b20_get_temp(DS18B20_STABLE_S_B, RESOLUTION_9, 7);
 
   if (!temp_in_range(t_collector,  TEMP(-30), TEMP(90)) ||
       !temp_in_range(t_stable_s_b, TEMP(-30), TEMP(90))) {
     relay_on (RELAY_PUMP_COLLECTOR);
-    printf("ERR: collector failback\n");
   } else {
 
   if (t_collector - t_stable_s_b > TEMP(10))

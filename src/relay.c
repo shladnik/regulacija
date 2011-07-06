@@ -14,18 +14,7 @@ static const relay_t const relay_tab [] = {
 
 static const relay_t const relay_tab [] PROGMEM = {
 #endif
-  { 2, 1 << 4 },
-  { 2, 1 << 5 },
-  { 1, 1 << 1 },
-  { 1, 1 << 0 },
-  { 2, 1 << 1 },
-  { 2, 1 << 0 },
-  { 2, 1 << 3 },
-  { 2, 1 << 2 },
-  { 3, 1 << 5 },
-  { 3, 1 << 4 },
-  { 3, 1 << 7 },
-  { 3, 1 << 6 },
+#include "relay_list.c"
 };
 
 #if 0

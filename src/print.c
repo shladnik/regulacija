@@ -5,10 +5,10 @@ typedef uint8_t print_buf_p;
 typedef uint16_t print_buf_p;
 #endif
 
-char print_buf [SIZE]             __attribute__ ((section (".noinit")));
-print_buf_p print_buf_wp __attribute__ ((section (".noinit")));
-print_buf_p print_buf_rp __attribute__ ((section (".noinit")));
-uint16_t print_buf_ovf    __attribute__ ((section (".noinit")));
+DBG char print_buf [SIZE];
+DBG print_buf_p print_buf_wp;
+DBG print_buf_p print_buf_rp;
+DBG uint16_t print_buf_ovf;
 //volatile bool    print_buf_block  = 0;
 #define print_buf_block 0
 
@@ -116,7 +116,7 @@ void print_buf_init()
 {
   stdout = &print_str;
   stderr = &print_str;
-
+#if 0
   /* Check if console is messed up (and almost certainly is on power-up) */
   if ((print_buf_ovf && (print_buf_pinc(print_buf_wp) != print_buf_rp)) ||
        print_buf_wp >= SIZE ||
@@ -124,6 +124,6 @@ void print_buf_init()
     print_buf_ovf = 0;
     if (print_buf_rp >= SIZE) print_buf_rp = 0;
     print_buf_wp = print_buf_rp;
-    printf("Console initialized!\n");
   }
+#endif
 }

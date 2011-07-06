@@ -38,22 +38,21 @@ uintptr_t find_free(uintptr_t start, uintptr_t end)
     }
   }
 
-  uintptr_t free = i - start;
-  if (free) printf("Free: %d (%x-%x)\n", free, start, i);
-  return free;
+  return i - start;
 #endif
 }
 
-void stack_check()
+__attribute__((used))
+uintptr_t stack_check()
 {
   /* this works as long as we don't use heap */
   extern uint8_t _end;
   uintptr_t start = (uintptr_t)&_end;
   uintptr_t end   = SP;
-  if (find_free(start, end) < 0x8)
-    printf("\n\nLow on RAM\n\n");
+  return find_free(start, end);
 }
 
+__attribute__((used))
 void stack_check_init()
 {
   extern uint8_t _end;

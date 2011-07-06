@@ -1,15 +1,6 @@
 #ifndef __SENSOR_H__
 #define __SENSOR_H__ 1
 
-#define ERR_NO_PRESENCE       1
-#define ERR_CRC_ROM           2
-#define ERR_SCRATCHPAD_0      3
-#define ERR_SCRATCHPAD_CRC    4
-#define ERR_EEPROM_WRITE      5
-#define ERR_SCRATCHPAD_WRITE  6
-#define ERR_RESOLUTION        7
-#define ERR_TEMP              8
-
 typedef enum {
 #include "ds18b20_list.h"
 } DS18B20;
@@ -30,8 +21,5 @@ typedef int16_t temp_t;
 void ds18b20_init(DS18B20 i);
 void ds18b20_init_all();
 temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty);
-
-void ds18b20_sprint_temp_int(char * str, temp_t temp);
-void ds18b20_sprint_temp_fp (char * str, temp_t temp);
 
 #endif

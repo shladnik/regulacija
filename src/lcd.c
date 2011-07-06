@@ -108,10 +108,14 @@ FILE lcd_str = FDEV_SETUP_STREAM(
 int lprintf(uint8_t y, uint8_t x, const char * __fmt, ...)
 {
   lcd_set_adr(y, x);
-
+#if 0
+  (void)__fmt;
+  return 0;
+#else
   va_list args;
   va_start(args, __fmt);
   return vfprintf(&lcd_str, __fmt, args);
+#endif
 }
 
 void lcd_refresh()

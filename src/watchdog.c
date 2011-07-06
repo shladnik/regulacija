@@ -14,3 +14,10 @@ void watchdog_start()
   wdt_enable(WDTO_2S);
   watchdog_loop();
 }
+
+void watchdog_mcu_reset()
+{
+  cli();
+  wdt_enable(0);
+  while (1);
+}

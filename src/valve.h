@@ -3,24 +3,14 @@
 
 typedef enum
 {
-  VALVE_SH0,
-  VALVE_SH1,
-  VALVE_RADIATOR,
-  VALVE_FURNACE,
+#include "valve_list.h"
 } VALVE;
 
 typedef timer_t valve_state_t;
-#define VALVE_STATE_MAX_CHECK (4ull * 60 * F_CPU)
 
-#if VALVE_STATE_MAX_CHECK > TIMER_MAX
-#error timer_t not sufficient for VALVE_STATE_MAX
-#else
-
-#define VALVE_STATE_MIN ((valve_state_t)(0))
-#define VALVE_STATE_MAX ((valve_state_t)(VALVE_STATE_MAX_CHECK))
-#define VALVE_MIN_MOVE  ((valve_state_t)(5ull * F_CPU))
-
-#endif
+#define VALVE_STATE_MIN 0
+#define VALVE_STATE_MAX TIMER_MIN(4)
+#define VALVE_MIN_MOVE  TIMER_S(5)
 
 void valve_init();
 void valve_open_for(VALVE i, valve_state_t amount);
