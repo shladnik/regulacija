@@ -10,7 +10,7 @@ import xml_parse
 
 defines = {
 #  "F_CPU" : "8000000UL",
-  "F_CPU" : "9216000UL",
+  "F_CPU" : "9216000",
   "PLAIN_CONSOLE" : 0,
   "BAUD" : 230400,
 #  "BAUD" : 9600,
@@ -41,6 +41,9 @@ cflags = (
 
 
 "-Wl,--relax",
+"-Wl,--section-start=.bootloader=0x7000",
+"-Wl,--section-start=.config=0x6000",
+
 # throw out unneeded code - this seems to have no effect when -combine -fwhole-program is used
 #"-fdata-sections",
 #"-ffunction-sections",
@@ -67,6 +70,7 @@ includes = [
 "avr/interrupt.h",
 "avr/wdt.h",
 "avr/eeprom.h",
+"avr/boot.h",
 "avr/pgmspace.h",
 "util/delay.h",
 "util/atomic.h",
@@ -99,6 +103,8 @@ sources = (
 "src/console.c",
 "src/print.c",
 "src/exexec.c",
+"src/config.c",
+"src/flash.c",
 )
 
 for i in sources:
@@ -160,16 +166,73 @@ def compile(dirn):
 #print(folder)
 folder = "."
 
+
+
+#def rlistdir(name = ""):
+#  lname = name
+#  if lname == "": lname = "./"
+#  l = [os.path.join(name, x) for x in os.listdir(os.path.join(lname))]
+#  fl = list(l)
+#  for d in l:
+#    if os.path.isdir(d):
+#      fl += rlistdir(os.path.join(name, d))
+#
+#  return fl
+
+#def rlistdir(name):
+#  ignore = [
+#    ".git",
+#    "meta",
+#    ".pyc",
+#    "./py/server.py",
+#  ]
+#  l = [(os.path.getmtime(name + "/" + x), name + "/" + x) for x in os.listdir(name)]
+#  for i in ignore:
+#    try:
+#      cp = list(l)
+#      for e in cp:
+#        print(e[1][-len(i):], i)
+#        if e[1][-len(i)-1:] == i:
+#          l.remove((os.path.getmtime(i), i))
+#    except: pass
+#  fl = list(l)
+#  for d in l:
+#    if os.path.isdir(d[1]):
+#      fl += rlistdir(d[1])
+#
+#  fl.sort()
+#  return fl
+
+#l = rlistdir()
+#print(l)
+#l = l[l.index((os.path.getmtime("./bin.bin"), "./bin.bin"))+1:-1]
+#if len(l) == 1:
+#  print("Nothing changed - not recompiling.")
+#else:
+#  print("Changed files:", l)
 cs = compile(folder)
 if cs:
   print("Compiler error", cs)
   exit()
 
 meta = open("meta", 'wb')
-symbols = objdump.correct_symbols(objdump.get_symbols(objdump.ram_sections + objdump.rom_sections))
+symbols = objdump.correct_symbols(objdump.get_symbols())
 pickle.dump((defines, symbols), meta)
 meta.close()
 
-subprocess.Popen(["ls", "-l", folder + "/obj.obj", folder + "/bin.bin"]).communicate()
-#subprocess.Popen(["scp", folder + "/bin.bin", "stefan@stefuc.homeip.net:~"]).communicate()
-subprocess.Popen(["avrdude", "-c", "stk500v2", "-P", "/dev/ttyUSB0", "-p", "m32", "-U", "flash:w:bin.bin"]).communicate()
+subprocess.Popen(["avr-size", "-A", folder + "/obj.obj"]).communicate()
+if 1:
+  subprocess.Popen(["scp", 
+                    folder + "/bin.bin",
+                    folder + "/meta",
+                    "stefan@stefuc.homeip.net:~/regulacija/"]).communicate()
+  subprocess.Popen(["scp", 
+                    folder + "/xml/xml.xml",
+                    "stefan@stefuc.homeip.net:~/regulacija/xml"]).communicate()
+  subprocess.Popen(["scp", 
+  #                  folder + "/py/server.py",
+                    folder + "/py/gum.py",
+                    folder + "/py/rs232.py",
+                    "stefan@stefuc.homeip.net:~/regulacija/"]).communicate()
+if 0:
+  subprocess.Popen(["avrdude", "-c", "stk500v2", "-P", "/dev/ttyUSB0", "-p", "m32", "-U", "flash:w:bin.bin"]).communicate()

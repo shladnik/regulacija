@@ -4,9 +4,9 @@ import subprocess
 
 base_cmd = [ "avr-objdump", "-t", "obj.obj" ]
 ram_sections = [ ".noinit", ".bss", ".data" ]
-rom_sections = [ ".text" ]
+rom_sections = [ ".text", ".config" ]
 
-def get_symbols(sections):
+def get_symbols(sections = []):
   symbol = {}
   cmd = list(base_cmd)
   for s in sections:
@@ -30,9 +30,9 @@ def get_symbols(sections):
     
 def correct_symbols(syms):
   for i in syms:
-    if rom_sections.count(syms[i]['section']):
+    if syms[i]['adr'] < 0x800000:
       syms[i]['adr'] >>= 1
-    if ram_sections.count(syms[i]['section']):
+    else:
       syms[i]['adr'] -= 0x800000
 
   original = syms.copy()
@@ -61,7 +61,7 @@ def print_symbols(syms, min_size=0):
 
 if __name__ == "__main__":
   import sys
-  symbol = correct_symbols(get_symbols(ram_sections + rom_sections))
+  symbol = correct_symbols(get_symbols([]))
   print("Found ", len(symbol), " symbols.")
   if len(sys.argv) > 1:
     print_symbols(correct_symbols(get_symbols(sys.argv[1:])), 1)

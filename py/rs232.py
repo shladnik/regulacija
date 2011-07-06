@@ -6,7 +6,7 @@ import queue
 import time
 
 
-rs232 = serial.Serial(port="/dev/ttyUSB1", baudrate=115200)
+rs232 = serial.Serial(port="/dev/ttyUSB0", baudrate=115200)
 fifo = queue.Queue()
 
 def loop():
@@ -17,12 +17,10 @@ def get(timeout = 0.1): #1000 * 10.0/rs232.baudrate):
   return fifo.get(block=True, timeout=timeout)
 
 def put(b):
-  if type(b) == type(1):
-    rs232.write(bytes([b]))
-  else:
-    rs232.write(b)
-  # let it breath
-  time.sleep(10 * 10.0/rs232.baudrate)
+  if type(b) != int:
+    raise Exception("Cannot send more then a char at once.")
+  rs232.write(bytes([b]))
+  time.sleep(15 * 10.0/rs232.baudrate)
 
 def start(baudrate):
   print("BAUD: ", baudrate)
@@ -142,6 +140,7 @@ def access(write, adr, dat):
   while 1: 
     try:
       pac = receive()
+      #print(pac)
       #print("rx:", "%x" % pac[0], "%x" % pac[1], pac[2])
       if not (pac[0] == ~write & 0x1 and pac[1] == adr and len(pac[2]) == len(dat[0:0xff])):
         raise Exception("Wrong packet received", pac, adr, len(dat))
@@ -149,7 +148,7 @@ def access(write, adr, dat):
         break
     except Exception as inst:
       print("Protocol error:", type(inst), inst)
-      time.sleep(1)
+      time.sleep(5)
       if (type(inst) == queue.Empty):
         send(write, adr, dat[0:0xff])
 
