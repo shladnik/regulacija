@@ -1,4 +1,4 @@
-#define SIZE 255
+#define SIZE 128
 #if SIZE <= 256
 typedef uint8_t print_buf_p;
 #else
@@ -77,7 +77,7 @@ char print_buf_peek(print_buf_p i)
 int print_buf_putc(char c, FILE * f)
 {
   (void)(f);
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     if (print_buf_block) {
       while (print_buf_full()) {
 #if PLAIN_CONSOLE

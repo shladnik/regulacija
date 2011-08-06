@@ -89,7 +89,7 @@ bool onewire_val()
 bool onewire_reset()
 {
   bool failed;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
     onewire_0_dly(t_r);
     onewire_idle_dly(t_r_pullup);
@@ -107,7 +107,7 @@ bool onewire_reset()
 
 void onewire_write0()
 {
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
     onewire_0_dly(t_slot);
     onewire_idle_dly(t_recovery);
@@ -116,7 +116,7 @@ void onewire_write0()
 
 void onewire_write1()
 {
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
     onewire_0_dly(t_init);
     onewire_idle_dly(t_slot - t_init + t_recovery);
@@ -132,7 +132,7 @@ void onewire_write(bool val)
 bool onewire_read()
 { 
   bool val;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
     onewire_0_dly(t_init);
     onewire_z_dly(t_sample - t_init);

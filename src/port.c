@@ -16,7 +16,7 @@ void port_set_0(uint8_t i, const uint8_t mask)
 {
   volatile uint8_t * dir = &DDRA - 3 * i;
   volatile uint8_t * out = dir + 1;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     *out &= ~mask;
     *dir |=  mask;
   }
@@ -26,7 +26,7 @@ void port_set_z(uint8_t i, uint8_t mask)
 {
   volatile uint8_t * dir = &DDRA - 3 * i;
   volatile uint8_t * out = dir + 1;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     *dir &= ~mask;
     *out &= ~mask;
   }
@@ -36,7 +36,7 @@ void port_set_pu(uint8_t i, uint8_t mask)
 {
   volatile uint8_t * dir = &DDRA - 3 * i;
   volatile uint8_t * out = dir + 1;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     *dir &= ~mask;
     *out |=  mask;
   }
@@ -46,7 +46,7 @@ void port_set_1(uint8_t i, uint8_t mask)
 {
   volatile uint8_t * dir = &DDRA - 3 * i;
   volatile uint8_t * out = dir + 1;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     *out |=  mask;
     *dir |=  mask;
   }
@@ -56,7 +56,7 @@ void port_set_8(uint8_t i, uint8_t val)
 {
   volatile uint8_t * dir = &DDRA - 3 * i;
   volatile uint8_t * out = dir + 1;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     *out = val;
     *dir = 0xff;
   }

@@ -32,3 +32,8 @@ void loops_start()
 {
   for (uint8_t i = 0; i < LOOP_NR; i++) loop_handler((void *)(uint16_t)i);
 }
+
+void loops_check()
+{
+  assert(LOOP_NR == timer_count(loop_handler));
+}
