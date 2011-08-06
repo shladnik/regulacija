@@ -65,3 +65,5 @@ if __name__ == "__main__":
   print("Found ", len(symbol), " symbols.")
   if len(sys.argv) > 1:
     print_symbols(correct_symbols(get_symbols(sys.argv[1:])), 1)
+  else:
+    print_symbols(correct_symbols(get_symbols()), 1)

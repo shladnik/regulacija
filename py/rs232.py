@@ -8,6 +8,7 @@ import time
 
 rs232 = serial.Serial(port="/dev/ttyUSB0", baudrate=115200)
 fifo = queue.Queue()
+lock = threading.RLock()
 
 def loop():
   while 1:
@@ -130,30 +131,37 @@ def send(write, adr, dat):
     put(b)
 
 def access(write, adr, dat):
-  if len(dat) == 0: raise Exception()
-  adr &= 0xffff
-  #print("tx:", "%x" % write, "%x" % adr, dat)
-  send(write, adr, dat[0:0xff])
-  #pac = receive()
-  #if not (pac[0] == ~write & 0x1 and pac[1] == adr and len(pac[2]) == len(dat[0:0xff])):
-  #  raise Exception("Wrong packet received", pac, adr, len(dat))
-  while 1: 
-    try:
-      pac = receive()
-      #print(pac)
-      #print("rx:", "%x" % pac[0], "%x" % pac[1], pac[2])
-      if not (pac[0] == ~write & 0x1 and pac[1] == adr and len(pac[2]) == len(dat[0:0xff])):
-        raise Exception("Wrong packet received", pac, adr, len(dat))
-      else:
-        break
-    except Exception as inst:
-      print("Protocol error:", type(inst), inst)
-      time.sleep(5)
-      if (type(inst) == queue.Empty):
-        send(write, adr, dat[0:0xff])
+  global lock
+  lock.acquire()
 
-  if len(dat) > 0xff:
-    pac[2].extend(access(write, adr + 0xff, dat[0xff:]))
-  return pac[2]
+  try:
+    if len(dat) == 0: raise Exception()
+    adr &= 0xffff
+    #print("tx:", "%x" % write, "%x" % adr, dat)
+    send(write, adr, dat[0:0xff])
+    #pac = receive()
+    #if not (pac[0] == ~write & 0x1 and pac[1] == adr and len(pac[2]) == len(dat[0:0xff])):
+    #  raise Exception("Wrong packet received", pac, adr, len(dat))
+    while 1: 
+      try:
+        pac = receive()
+        #print(pac)
+        #print("rx:", "%x" % pac[0], "%x" % pac[1], pac[2])
+        if not (pac[0] == ~write & 0x1 and pac[1] == adr and len(pac[2]) == len(dat[0:0xff])):
+          raise Exception("Wrong packet received", pac, adr, len(dat))
+        else:
+          break
+      except Exception as inst:
+        print("Protocol error:", type(inst), inst)
+        time.sleep(5)
+        if (type(inst) == queue.Empty):
+          send(write, adr, dat[0:0xff])
+
+    if len(dat) > 0xff:
+      pac[2].extend(access(write, adr + 0xff, dat[0xff:]))
+    return pac[2]
+  finally:
+    lock.release()
+  
 
 

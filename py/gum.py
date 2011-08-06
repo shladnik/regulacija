@@ -3,6 +3,7 @@
 import time
 import rs232
 import pickle
+import threading
 
 meta = open("meta", 'rb')
 pickled = pickle.load(meta)
@@ -79,40 +80,46 @@ def readcon(max_read=1.0):
 
 
 
-def exexec(func, arg):
-  max_args = 4
-  
-  if arg == None:
-    arg = [ 0, 0, 0, 0 ]
-  elif len(arg) > max_args:
-    raise Exception("To many arguments to exexec!")
-  else:
-    for i in range(max_args):
-      if i < len(arg):
-        if type(arg[i]) != int:
-          arg[i] = 0
-      else:
-        arg.append(0)
+lock = threading.Lock()
 
-  arg_buf = bytearray()
-  for i in arg:
-    arg_buf.insert(0, (i >> 8) & 0xff)
-    arg_buf.insert(0, (i >> 0) & 0xff)
+def exexec(func, arg = [0, 0, 0, 0]):
+  global lock
+  lock.acquire()
 
-  while read_symbol("exexec_func") != 0:
-    print("exexec busy!")
-    time.sleep(0.01)
+  try:
+    max_args = 4
+    
+    if len(arg) > max_args:
+      raise Exception("To many arguments to exexec!")
+    else:
+      for i in range(max_args):
+        if i < len(arg):
+          if type(arg[i]) != int:
+            arg[i] = 0
+        else:
+          arg.append(0)
 
-  write_symbol("exexec_buf", arg_buf)
-  write_symbol("exexec_func", symbols[func]['adr'])
-  while read_symbol("exexec_func") != 0:
-    time.sleep(0.01)
+    arg_buf = bytearray()
+    for i in arg:
+      arg_buf.insert(0, (i >> 8) & 0xff)
+      arg_buf.insert(0, (i >> 0) & 0xff)
 
-  return_bytes = read_symbol("exexec_buf", None)
-  ret_val = []
-  for i in range(0,len(return_bytes),2):
-    ret_val.insert(0, return_bytes[i] + return_bytes[i+1] * 256)
-  return ret_val
+    while read_symbol("exexec_func") != 0:
+      print("exexec busy!")
+      time.sleep(0.01)
+
+    write_symbol("exexec_buf", arg_buf)
+    write_symbol("exexec_func", symbols[func]['adr'])
+    while read_symbol("exexec_func") != 0:
+      time.sleep(0.01)
+
+    return_bytes = read_symbol("exexec_buf", None)
+    ret_val = []
+    for i in range(0,len(return_bytes),2):
+      ret_val.insert(0, return_bytes[i] + return_bytes[i+1] * 256)
+    return ret_val
+  finally:
+    lock.release()
 
 def ds18b20_get_temp(i, resolution = 0, rty = 1):
   val = exexec("ds18b20_get_temp", [ i, resolution, rty ])

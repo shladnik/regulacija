@@ -1,42 +1,53 @@
 Komponente:
-- 230V AC => 5V DC
-- ATMega32A, TQFP
-- RTC, npr. MCP79410 + primeren kristal
-- baterija (samo za RTC)
-- MAX487
-- nek USB na 485 converter, npr. FT232R
+- 230V AC => 5V DC (3.3V?)
+- ATMEL ATMEGA324 TQFP 44 pin
+- baterija
+- 32.768 Hz kristal
+- EXAR SP3072EEN-L (RS485)
+- FT232R (QFN-32 oz. najcenejsi)
 - konektor za USB (B)
 - releji:
-  - od 2 do 4 rele 5V coil, npr MULTICOMP MC36115, octocopler??
+  - od 2 do 4 releji
   - od 0 do 2 SSR npr. SHARP S216S01F (non-zero-cross!)
-  skupaj od 2 do 4 releji, prostori na PCBju namenjeni za SSD ali obicajne releje se lahko prekrivajo
-- 2x I2C ambient light sensor
+  skupaj od 2 do 4 releji, oz. odvisno od velikosti skatlice morda vec. Prostori
+  na PCBju namenjeni za SSD ali obicajne releje se lahko prekrivajo
+- AVAGO TECHNOLOGIES APDS-9300-020, 2x, najbolje ob robu PCBja, vsak mora imeti "pogled
+  v svet" na svojo stran. Pomembno je da dobi cel spekter - vidno svetlobo in
+  IR!
 
 Znotraj:
-- PA7 (ADC7) povezan nekam vmes med AC=>DC na 5V za sinhronizacijo z 230V AC, po moznosti samo zgornji del sinusa
+- PD3 (INT1) povezan nekam vmes med AC=>DC na 5V za sinhronizacijo z 230V AC,
+  popravek: OBA dela sinusa, se vedno lahko softversko delam samo z enim!
 - konektor za programiranje (SPI SCK, SPI MISO, SPI MOSI, RESET, GND)
 - jasno - vse potrebne povezave med komponentami:
-  - releji npr. na PC2 - PC5
-  - RTC na I2C pine
-  - RX/TX -> MAX487 -> na 'general purpose' konektor
-                    -> na FT232R -> USB konektor
+  - kristal na PC6/PC7 (TOSC1/TOSC2)
+  - releji npr. na PC2 - PC5, PD4, PD5, v tem vrstem redu
+  - light sensorji na I2C pine
+  - zakljucitev za MAX487
+  - UART RX/TX -> MAX487 RX-RX TX-TX -> konektor
+               -> FT232R RX-TX TX-RX -> USB konektor
+      MAX TX_EN  na MCU pin npr. PB4
+      MAX RX_EN# na FT232R TXDEN
+      FT232R
+         TX - MCU RX
+         RX - MCU TX
+         Mislim da bo moral bit v "self powered" konfiguraciji, zato da bodo TX/RX v tri-state.
   
-
 
 Ven speljani signali po prioriteti:
 Obvezno:
 - GND
 - POWER
-- RS485 signali
+- RS485 signali (4)
 - PA0 (ADC0)
 - PB2 (AIN0 / INT2)
 - PB3 (AIN1 / OC0)
-Zelo priporoceno:
 - PA1 (ADC1)
-- PB0 (T0 / USART XCK)
-Zazeljeno:
 - PC1 (I2C SDA)
 - PC0 (I2C SCL)
+Zelo priporoceno:
+- PB0 (T0 / USART XCK)
+Zazeljeno:
 - PD7 (OC2)
 - PD6 (ICP1)
 - PD2 (INT0)
@@ -45,7 +56,21 @@ Ce bo plac na konektorju
 - PB7 (SPI SCK)
 - PB6 (SPI MISO)
 - PB5 (SPI MOSI)
-Kar nebo slo na konektor naj bo vsaj notr moznost prilotat
+
 
 
 Vse skupaj naj bo seveda kar se da majhno in zapakirano v licno skatlico.
+Za zacetek bi naredil 2 - 5 skatlic, najmanj ena polno opremljena.
+
+Ready za atest?
+
+
+First pass:
+- schematics
+- bill of material
+- PCB cena
+- skatlica cena
+
+
+Naprej:
+ST7540, PL3120 ali kak podoben power line tranceiver?

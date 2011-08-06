@@ -81,9 +81,10 @@ includes = [
 ]
 
 sources = (
-"src/main.c",
-"src/timer_q.c",
 "src/timer.c",
+"src/main.c",
+"src/sch.c",
+"src/timer_q.c",
 "src/uart.c",
 "src/crc8.c",
 "src/onewire.c",
@@ -92,7 +93,6 @@ sources = (
 "src/port.c",
 "src/lcd.c",
 "src/valve.c",
-"src/sch.c",
 "src/loops.c",
 "src/stack_check.c",
 "src/watchdog.c",
