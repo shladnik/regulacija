@@ -6,21 +6,21 @@ typedef enum {
   CRC     ,
 } pac_state_t;
 
-static pac_state_t rx_state = ADR_SIZE;
-static bool        rx_write;
-static uint8_t *   rx_adr;
-static uint8_t     rx_adr_len;
-static uint8_t     rx_dat_len;
-static uint8_t     rx_crc = 0;
-static uint8_t     rx_buf [16];
-static bool        rx_timer = 0;
+pac_state_t rx_state = ADR_SIZE;
+bool        rx_write;
+uint8_t *   rx_adr;
+uint8_t     rx_adr_len;
+uint8_t     rx_dat_len;
+uint8_t     rx_crc = 0;
+uint8_t     rx_buf [16];
+bool        rx_timer = 0;
 
-static pac_state_t tx_state = ADR_SIZE;
-static bool        tx_write;
-static uint8_t *   tx_adr;
-static uint8_t     tx_adr_len;
-static uint8_t     tx_dat_len;
-static uint8_t     tx_crc = 0;
+pac_state_t tx_state = ADR_SIZE;
+bool        tx_write;
+uint8_t *   tx_adr;
+uint8_t     tx_adr_len;
+uint8_t     tx_dat_len;
+uint8_t     tx_crc = 0;
 
 void rx_reset()
 {

@@ -63,13 +63,6 @@ void debug_recovery()
     WDR_COPY(last_sch_func);
     WDR_COPY(last_timer_func);
     WDR_COPY(exexec_func);
-    WDR_COPY(sch_queue);
-    WDR_COPY(sch_wp);
-    WDR_COPY(sch_rp);
-extern uint8_t first;
-extern slot_t slot [MAX_TIMERS];
-    WDR_COPY(first);
-    WDR_COPY(slot);
   } else if (MCUCSR & 0x1f) {
     stack_check_init();
     dbg_init();

@@ -7,9 +7,6 @@ static uint16_t cmp_high;
 
 void timer_start()
 {
-#if OVF_CHECK
-  TCCR2 = 0x7;
-#endif
 #if   PRESCALER == 1
   TCCR1B = 0x1;
 #elif PRESCALER == 8
@@ -24,26 +21,27 @@ void timer_start()
 #error unsupported prescaler
 #endif
 #if OVF_CHECK
-  TIMSK |= (1 << TOIE1) | (1 << TOIE2);
+  TCCR0 = 0x5;
+  SFIOR |= (1 << PSR10);
+  TIFR  |= (1 << TOV1 ) | (1 << TOV0 );
+  TIMSK |= (1 << TOIE1) | (1 << TOIE0);
 #else
+  TIFR  |= (1 << TOV1 );
   TIMSK |= (1 << TOIE1);
 #endif
 }
 
 #if OVF_CHECK
-DBG_ISR(TIMER2_OVF_vect, ISR_BLOCK)
+DBG_ISR(TIMER0_OVF_vect, ISR_BLOCK)
 {
-#if PRESCALER
 #if PRESCALER > 256
-  static uint16_t high2;
+  static uint16_t high0;
 #else
-  static uint8_t  high2;
+  static uint8_t  high0;
 #endif
-  high2 = (high2 + 1) % PRESCALER;
-  if (high2 == 0) {
-#endif
-    assert(((uint8_t)high & 0x03) == 0x03);
-  }
+  high0++;
+  if ((high0 % PRESCALER) == 0)
+    assert(((uint8_t)high & 0x03) != 0x2);
 }
 #endif
 
@@ -60,7 +58,7 @@ DBG_ISR(TIMER1_OVF_vect,)
     en = 0;
     TIMSK |= 1 << OCIE1A;
     TIFR   = 1 << OCIE1A;
-    if (OCR1A < TCNT1) {
+    if (OCR1A <= TCNT1) {
       TIMER1_COMPA_vect_trigger();
     }
   }
@@ -79,7 +77,7 @@ timer_t timer_now()
   timer_t  high_val;
   
   bool ovf;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     high_val  = high;
     TCNT1_val = TCNT1;
     ovf = TIFR & (1 << TOV1);
@@ -108,6 +106,7 @@ void timer_set(timer_t start, timer_t cmp_new)
   OCR1A = (uint16_t)cmp_new;
   TIFR = 1 << OCIE1A;
 
+  //timer_t now = timer_tracked_get();
   timer_t now = timer_now();
   if (in_range(start, cmp_new, now)) {
     TIMER1_COMPA_vect_trigger();

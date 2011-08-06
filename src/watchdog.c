@@ -1,3 +1,4 @@
+
 void watchdog_loop()
 {
   wdt_reset();
@@ -7,6 +8,7 @@ void watchdog_loop()
   timer_t now = timer_now();
   assert(in_range(prev, now, next));
   prev = next;
+  loops_check();
 }
 
 void watchdog_start()

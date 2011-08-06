@@ -21,31 +21,29 @@ void log_adr();
   #define assert(e) ((e) ? (void)0 : __assert())
 #endif
 
-#ifdef NDEBUG
-  #define DBG_ISR ISR
-  #define DBG_ATOMIC_BLOCK ATOMIC_BLOCK
+#if 0 && !NDEBUG
+  #define DBG_ISR(vector, ...) \
+    void vector##_real(); \
+    ISR(vector, __VA_ARGS__) { \
+      extern ISR(TIMER1_OVF_vect); \
+      timer_t start = vector == TIMER1_OVF_vect ? timer_now() + 0x10000 : timer_now(); \
+      log_adr(); \
+      last_isr = vector; \
+      vector##_real(); \
+      last_isr = 0; \
+      timer_t end = timer_now(); \
+      timer_t time = end - start; \
+      if (time > isr_max_time) { \
+        isr_max_time = time; \
+        isr_max = vector; \
+      } \
+    } \
+    void vector##_real()
 #else
   #define DBG_ISR ISR
-  //#define DBG_ISR(vector, ...) \
-  //  void vector##_real(); \
-  //  ISR(vector, __VA_ARGS__) { \
-  //    extern ISR(TIMER1_OVF_vect); \
-  //    timer_t start = vector == TIMER1_OVF_vect ? timer_now() + 0x10000 : timer_now(); \
-  //    log_adr(); \
-  //    last_isr = vector; \
-  //    vector##_real(); \
-  //    last_isr = 0; \
-  //    timer_t end = timer_now(); \
-  //    timer_t time = end - start; \
-  //    if (time > isr_max_time) { \
-  //      isr_max_time = time; \
-  //      isr_max = vector; \
-  //    } \
-  //  } \
-  //  void vector##_real()
-
-  #define DBG_ATOMIC_BLOCK ATOMIC_BLOCK // TODO
 #endif
+
+#define DBG_ATOMIC_BLOCK ATOMIC_BLOCK // TODO
 
 #define MIN(x,y) (__extension__({ typeof (x) _x = x; typeof(y) _y = y; ((_x) < (_y) ? (_x) : (_y)); }))
 #define MAX(x,y) (__extension__({ typeof (x) _x = x; typeof(y) _y = y; ((_x) > (_y) ? (_x) : (_y)); }))
