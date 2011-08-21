@@ -81,8 +81,9 @@ includes = [
 ]
 
 sources = (
-"src/timer.c",
 "src/main.c",
+"src/timer.c",
+"src/debug.c",
 "src/sch.c",
 "src/timer_q.c",
 "src/uart.c",

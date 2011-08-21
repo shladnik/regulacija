@@ -38,8 +38,12 @@ DBG uint8_t ds18b20_max_rty[DS18B20_NR][2];
 
 void ds18b20_error(DS18B20 i, uint8_t errno)
 {
+#ifndef NDEBUG
   if (ds18b20_err_cnt[i][errno] < (typeof(ds18b20_err_cnt[i][errno]))-1)
     ds18b20_err_cnt[i][errno]++;
+#else
+  (void)i;
+#endif
   assert(ds18b20_err_handler);
   longjmp(*ds18b20_err_handler, errno);
 }
@@ -228,10 +232,15 @@ temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
   
   temp_t val;
 
+#ifndef NDEBUG
   if (ds18b20_max_rty[i][0] < try) {
     ds18b20_max_rty[i][0] = try;
     ds18b20_max_rty[i][1] = errno;
   }
+#else
+  (void)i;
+  (void)errno;
+#endif
 
   if (try <= rty) {
     if (try >= 2) {

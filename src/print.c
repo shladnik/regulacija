@@ -107,10 +107,11 @@ int print_buf_putc(char c, FILE * f)
   return 0;
 }
 
-static FILE print_str = FDEV_SETUP_STREAM(
-  print_buf_putc, 
-  0,
-  _FDEV_SETUP_WRITE);
+#ifdef NDEBUG
+static FILE print_str = FDEV_SETUP_STREAM(0,              0, _FDEV_SETUP_WRITE);
+#else
+static FILE print_str = FDEV_SETUP_STREAM(print_buf_putc, 0, _FDEV_SETUP_WRITE);
+#endif
 
 void print_buf_init()
 {

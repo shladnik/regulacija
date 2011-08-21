@@ -99,20 +99,26 @@ bool in_range(timer_t s, timer_t val, timer_t e)
                   if0 || if1;
 }
 
-void timer_set(timer_t start, timer_t cmp_new)
+void timer_set(timer_t cmp)
 {
   timer_unset();
 
-  OCR1A = (uint16_t)cmp_new;
+  timer_t tracked = timer_tracked_get();
+  OCR1A = (uint16_t)cmp;
   TIFR = 1 << OCIE1A;
-
-  //timer_t now = timer_tracked_get();
   timer_t now = timer_now();
-  if (in_range(start, cmp_new, now)) {
+
+  if (in_range(tracked, cmp, now)) {
+#ifndef NDEBUG
+    DBG static uint8_t timer_late_cnt;
+    DBG static timer_t timer_late_max;
+    timer_late_cnt++;
+    timer_late_max = MAX(timer_late_max, now - tracked);
+#endif
     TIMER1_COMPA_vect_trigger();
     TIMSK |= 1 << OCIE1A;
   } else {
-    cmp_high = cmp_new >> 16;
+    cmp_high = cmp >> 16;
     if (cmp_high == high) {
       TIMSK |= 1 << OCIE1A;
     } else {

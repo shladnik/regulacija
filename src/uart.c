@@ -6,21 +6,21 @@ typedef enum {
   CRC     ,
 } pac_state_t;
 
-pac_state_t rx_state = ADR_SIZE;
-bool        rx_write;
-uint8_t *   rx_adr;
-uint8_t     rx_adr_len;
-uint8_t     rx_dat_len;
-uint8_t     rx_crc = 0;
-uint8_t     rx_buf [16];
-bool        rx_timer = 0;
+static pac_state_t rx_state = ADR_SIZE;
+static bool        rx_write;
+static uint8_t *   rx_adr;
+static uint8_t     rx_adr_len;
+static uint8_t     rx_dat_len;
+static uint8_t     rx_crc = 0;
+static uint8_t     rx_buf [16];
+static bool        rx_timer = 0;
 
-pac_state_t tx_state = ADR_SIZE;
-bool        tx_write;
-uint8_t *   tx_adr;
-uint8_t     tx_adr_len;
-uint8_t     tx_dat_len;
-uint8_t     tx_crc = 0;
+static pac_state_t tx_state = ADR_SIZE;
+static bool        tx_write;
+static uint8_t *   tx_adr;
+static uint8_t     tx_adr_len;
+static uint8_t     tx_dat_len;
+static uint8_t     tx_crc = 0;
 
 void rx_reset()
 {
@@ -34,8 +34,10 @@ void rx_timeout()
 {
   rx_timer = 0;
   if (!(UCSRA & (1 << RXC))) {
+#ifndef NDEBUG
     DBG static uint8_t rx_timeout;
     if (rx_timeout < (typeof(rx_timeout))-1) rx_timeout++;
+#endif
     rx_reset();
   }
 }
@@ -53,8 +55,10 @@ DBG_ISR(USART_RXC_vect, ISR_BLOCK)
   bool err = 0;
 
   if (UCSRA & ((1<<FE)|(1<<DOR)|(1<<PE))) {
+#ifndef NDEBUG
     DBG static uint8_t rx_ovf;
     if (rx_ovf < (typeof(rx_ovf))-1) rx_ovf++;
+#endif
     err = 1;
   } else {
     uint8_t byte = UDR;
@@ -118,8 +122,10 @@ DBG_ISR(USART_RXC_vect, ISR_BLOCK)
           }
  
           if (UCSRB & (1 << UDRIE)) {
+#ifndef NDEBUG
             DBG static uint8_t tx_busy;
             if (tx_busy < (typeof(tx_busy))-1) tx_busy++;
+#endif
           } else {
             tx_write    = rx_write ? 0 : 1;
             tx_adr      = rx_adr;
@@ -135,8 +141,10 @@ DBG_ISR(USART_RXC_vect, ISR_BLOCK)
   }
  
   if (err) {
+#ifndef NDEBUG
     DBG static uint8_t rx_err;
     if (rx_err < (typeof(rx_err))-1) rx_err++;
+#endif
     rx_reset();
   } else if (rx_state != ADR_SIZE && !(UCSRA & (1 << RXC))) {
     rx_timer = 1;

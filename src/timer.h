@@ -18,7 +18,7 @@ typedef uint32_t timer_t;
 void timer_start();
 timer_t timer_now();
 bool in_range(timer_t s, timer_t val, timer_t e);
-void timer_set(timer_t start, timer_t cmp);
+void timer_set(timer_t cmp);
 void timer_unset();
 
 #endif

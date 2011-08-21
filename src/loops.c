@@ -24,7 +24,7 @@ static void loop_handler(void * arg)
   uint8_t i = (uint16_t)arg;
   sch_add((func_t)pgm_read_word(&loop[i].func));
   timer_t next = loop_next[i] + pgm_read_dword(&loop[i].dly);
-  timer_add_cmp(loop_next[i], next, loop_handler, arg, -1);
+  timer_add_cmp(next, loop_handler, arg, -1);
   loop_next[i] = next;
 }
 

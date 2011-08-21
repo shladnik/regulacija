@@ -6,7 +6,8 @@ BOOTLOADER_SECTION void flash_write_block(uintptr_t adr, uint8_t * buf, uintptr_
   extern uint8_t _etext;
   if (adr <= ((uintptr_t)&_etext | (SPM_PAGESIZE - 1))) {
     static uint8_t flash_magic; // this should NEVER be set from program itself
-    assert(flash_magic == 0xa5); // magic
+    if (flash_magic != 0xa5) // magic
+      return;
   }
 
   uintptr_t start = adr;

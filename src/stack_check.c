@@ -25,7 +25,6 @@ uintptr_t find_free(uintptr_t start, uintptr_t end)
   }
 
   uintptr_t free = i - start;
-  if (free) printf("Free: %d (%x-%x)\n", free, start, i);
   uintptr_t free1 = i == end ? 0 : find_free(i, end);
   return MAX(free, free1);
 #else
