@@ -1,6 +1,11 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+#define NOINIT __attribute__((section(".noinit")))
+#define META   __attribute__((section(".meta")))
+#define USED   __attribute__((used))
+#define INLINE __attribute__((always_inline))
+
 typedef void (*func_t)();
 
 #define MIN(x,y) (__extension__({ typeof (x) _x = x; typeof(y) _y = y; ((_x) < (_y) ? (_x) : (_y)); }))

@@ -1,3 +1,5 @@
+DBG temp_t radiator_goal_calc;
+
 void radiator_loop()
 {
   temp_t read_0 = ds18b20_get_temp(DS18B20_RADIATOR_U, RESOLUTION_11, 7);
@@ -7,12 +9,14 @@ void radiator_loop()
   temp_t curr = read_1 + (read_1 - read_0) * 16;
 
   temp_t goal;
-  if (radiator_goal) {
-    goal = radiator_goal;
-  } else {
+  CONFIG_READ(goal, radiator_goal);
+
+  if (goal < 0) {
     temp_t t_collector = ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 7);
     goal = TEMP(20) + (TEMP(20) - t_collector);
   }
+
+  radiator_goal_calc = goal;
 
   bool dir = curr > goal;
   temp_t diff = dir ? curr - goal : goal - curr;

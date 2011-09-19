@@ -4,15 +4,11 @@ typedef struct {
 } loop_t;
 
 const loop_t loop [] PROGMEM = {
-//  { console_loop        , TIMER_S(10)  },
-  { lcd_loop            , TIMER_S(10)  },
-//  { lcd_heartbeat       , TIMER_S(1)   },
-  { pumping_loop        , TIMER_MIN(1) },
-  { collector_loop      , TIMER_S(30)  },
-  { furnace_loop        , TIMER_S(10)  },
-//  { radiator_goal_loop  , TIMER_MIN(5) },
-  { radiator_loop       , TIMER_S(10)  },
-//  { stack_check         , TIMER_MIN(1) },
+  { lcd_loop      , TIMER_S(10)  },
+  { pumping_loop  , TIMER_MIN(1) },
+  { collector_loop, TIMER_S(30)  },
+  { furnace_loop  , TIMER_S(10)  },
+  { radiator_loop , TIMER_S(10)  },
 };
 
 #define LOOP_NR (sizeof(loop)/sizeof(loop_t))

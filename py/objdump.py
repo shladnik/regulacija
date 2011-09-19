@@ -3,7 +3,7 @@
 import subprocess
 
 base_cmd = [ "avr-objdump", "-t", "obj.obj" ]
-ram_sections = [ ".noinit", ".bss", ".data" ]
+ram_sections = [ ".noinit", ".bss", ".data", ".dbg" ]
 rom_sections = [ ".text", ".config" ]
 
 def get_symbols(sections = []):
@@ -31,9 +31,10 @@ def get_symbols(sections = []):
 def correct_symbols(syms):
   for i in syms:
     if syms[i]['adr'] < 0x800000:
-      syms[i]['adr'] >>= 1
+      syms[i]['mem'] = 'flash'
     else:
       syms[i]['adr'] -= 0x800000
+      syms[i]['mem'] = 'ram'
 
   original = syms.copy()
   for key in original:

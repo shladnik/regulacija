@@ -38,36 +38,41 @@ DBG_ISR(BADISR_vect, ISR_BLOCK)
 }
 
 
-void dbg_init()
+USED void dbg_init()
 {
+  stack_check_init();
   extern uint8_t __data_end;
   extern uint8_t __bss_start;
   for (uint8_t * i = &__data_end; i < &__bss_start; i++) *i = 0x00;
 }
-DBG uint8_t arr [0x4a];
+
 __attribute__((section(".init3"), naked, used))
 void debug()
 {
-  DBG static uint8_t boot_cnt;
-  boot_cnt++;
+  const uint8_t RFMASK = (1 << JTRF) | (1 << WDRF) | (1 << BORF) | (1 << EXTRF) | (1 << PORF);
+  uint8_t rst_src = MCUCSR & RFMASK;
+  MCUCSR = MCUCSR & ~RFMASK;
 
-  if (MCUCSR & (1 << WDRF)) {
-    DBG static uint8_t wdrf_cnt;
-    wdrf_cnt++;
-
+  if (rst_src & ~(1 << WDRF)) {
+    dbg_init();
+  } else {
+    if (rst_src & (1 << WDRF)) {
+      DBG static uint8_t wdrf_cnt;
+      wdrf_cnt++;
+    } else {
+      DBG static uint8_t reboot_cnt;
+      reboot_cnt++;
+    }
+ 
     DBG_COPY(last_adr);
     DBG_COPY(last_time);
     DBG_COPY(last_isr);
     //extern void timer_debug(); timer_debug();
     //extern void exexec_debug(); exexec_debug();
-  } else if (MCUCSR & 0x1f) {
-    stack_check_init();
-    dbg_init();
   }
-  
-  DBG static uint8_t rst_src_last, rst_src;
-  rst_src_last = MCUCSR & 0x1f;
-  MCUCSR = MCUCSR & 0xe0;
-  rst_src |= rst_src_last;
+ 
+  DBG static uint8_t rst_src_last, rst_src_all;
+  rst_src_last = rst_src;
+  rst_src_all |= rst_src;
 }
 

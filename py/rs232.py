@@ -8,23 +8,36 @@ import time
 
 rs232 = serial.Serial(port="/dev/ttyUSB0", baudrate=115200)
 fifo = queue.Queue()
-lock = threading.RLock()
+
+rs232.lock = threading.RLock()
+
+def safe_read(size = 1, timeout = 0.5):
+  with rs232.lock:
+    rs232.timeout = timeout
+    return rs232.read_orig(size)
+
+rs232.read_orig = rs232.read
+rs232.read = safe_read
 
 def loop():
   while 1:
-    fifo.put(rs232.read(1)[0])
+    r = rs232.read(1)
+    if r: fifo.put(r[0])
 
 def get(timeout = 0.1): #1000 * 10.0/rs232.baudrate):
   return fifo.get(block=True, timeout=timeout)
 
-def put(b):
+def put(b, delay = 15 * 10.0/rs232.baudrate):
   if type(b) != int:
     raise Exception("Cannot send more then a char at once.")
   rs232.write(bytes([b]))
-  time.sleep(15 * 10.0/rs232.baudrate)
+  time.sleep(delay)
+
+def flush():
+  while not fifo.empty(): fifo.get()
 
 def start(baudrate):
-  print("BAUD: ", baudrate)
+  #print("BAUD: ", baudrate)
   rs232.baudrate = baudrate
 
   readThread = threading.Thread(target=loop)
@@ -32,10 +45,22 @@ def start(baudrate):
   readThread.start()
 
 
+#
+# Flashing stuff
+#
+
+def flash_put(pac):
+  if type(pac) == int: pac = bytes([pac])
+  rs232.write(pac)
+  echo = rs232.read(len(pac))
+  if pac != echo:
+    raise Exception("Flashing echo error (sent:" + str(pac) + " echo: " + str(echo))
+
 
 #
 # Protocol stuff
 #
+lock = threading.RLock()
 
 def crc_update(crc, byte):
   if not 0 <= byte < 0x100: raise
@@ -63,10 +88,8 @@ def rx_nr(cnt):
     b = int()
     if cnt == 1:
       b = get(timeout=0.5)
-      #print("RX:%x" % b)
     else:
       b = get()
-    #print("RX: %2x" % b)
     rx_bytes.append(b)
 
 def receive():
@@ -110,7 +133,7 @@ def receive():
   except Exception as inst:
     if len(rx_bytes):
       rx_bytes.pop(0)
-    raise
+    raise inst
 
 
 def send(write, adr, dat):
@@ -130,32 +153,30 @@ def send(write, adr, dat):
   for b in pac:
     put(b)
 
-def access(write, adr, dat):
+def access(write, adr, dat, rty = 1):
   global lock
   lock.acquire()
 
   try:
     if len(dat) == 0: raise Exception()
     adr &= 0xffff
-    #print("tx:", "%x" % write, "%x" % adr, dat)
     send(write, adr, dat[0:0xff])
-    #pac = receive()
-    #if not (pac[0] == ~write & 0x1 and pac[1] == adr and len(pac[2]) == len(dat[0:0xff])):
-    #  raise Exception("Wrong packet received", pac, adr, len(dat))
-    while 1: 
+    while rty: 
       try:
         pac = receive()
-        #print(pac)
-        #print("rx:", "%x" % pac[0], "%x" % pac[1], pac[2])
         if not (pac[0] == ~write & 0x1 and pac[1] == adr and len(pac[2]) == len(dat[0:0xff])):
           raise Exception("Wrong packet received", pac, adr, len(dat))
         else:
           break
       except Exception as inst:
-        print("Protocol error:", type(inst), inst)
-        time.sleep(5)
-        if (type(inst) == queue.Empty):
-          send(write, adr, dat[0:0xff])
+        if rty:
+          rty -= 1
+          print("Protocol error:", type(inst), inst)
+          time.sleep(5)
+          #if (type(inst) == queue.Empty):
+          #  send(write, adr, dat[0:0xff])
+          rx_bytes = bytearray()
+          flush()
 
     if len(dat) > 0xff:
       pac[2].extend(access(write, adr + 0xff, dat[0xff:]))

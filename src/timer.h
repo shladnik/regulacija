@@ -1,7 +1,7 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 
-#define PRESCALER 8
+#define PRESCALER 64
 #if F_CPU % PRESCALER
   #error Cannot exactly match 1 second with timer
 #else

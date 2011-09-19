@@ -7,6 +7,9 @@ from datetime import datetime
 
 import objdump
 import xml_parse
+import tools
+
+build = tools.construct_time()
 
 defines = {
 #  "F_CPU" : "8000000UL",
@@ -16,6 +19,15 @@ defines = {
 #  "BAUD" : 9600,
   "__ASSERT_USE_STDERR" : "", # I have my own assert right now anyway
 #  "NDEBUG" : "",
+  "SPM_PAGESIZE" : 128,
+
+  "BUILD_SEC"     : build[0],
+  "BUILD_MIN"     : build[1],
+  "BUILD_HOUR"    : build[2],
+  "BUILD_WEEKDAY" : build[3],
+  "BUILD_DAY"     : build[4],
+  "BUILD_MONTH"   : build[5],
+  "BUILD_YEAR"    : tools.to_int(build[6:8])
 }
 
 cflags = (
@@ -41,8 +53,6 @@ cflags = (
 
 
 "-Wl,--relax",
-"-Wl,--section-start=.bootloader=0x7000",
-"-Wl,--section-start=.config=0x6000",
 
 # throw out unneeded code - this seems to have no effect when -combine -fwhole-program is used
 #"-fdata-sections",
@@ -83,9 +93,11 @@ includes = [
 sources = (
 "src/main.c",
 "src/timer.c",
+"src/cron.c",
 "src/debug.c",
 "src/sch.c",
 "src/timer_q.c",
+"src/clock.c",
 "src/uart.c",
 "src/crc8.c",
 "src/onewire.c",
@@ -106,6 +118,7 @@ sources = (
 "src/exexec.c",
 "src/config.c",
 "src/flash.c",
+"src/bootloader.c",
 )
 
 for i in sources:
@@ -117,7 +130,7 @@ def compile(dirn):
   xml_parse.gen_c()
   
   # Common part
-  base_cmd = [ "avr-gcc", "-I", "src/auto" ]
+  base_cmd = [ "avr-gcc", "-T", "ld.x", "-I", "src/auto" ]
   for i in includes:
     base_cmd[len(base_cmd):] = [ "-include", i ]
 
@@ -157,6 +170,9 @@ def compile(dirn):
   # obj -> bin
   binn = dirn + "/bin.bin"
   b = subprocess.Popen(["avr-objcopy", "-R", ".eeprom", "-O", "binary", objn, binn]) 
+  b.communicate()
+  bootloadern = dirn + "/bootloader.bin"
+  b = subprocess.Popen(["avr-objcopy", "-R", ".bootjmp", "-R", ".bootloader", "-R", ".config", "-O", "binary", objn, bootloadern]) 
   b.communicate()
   return b.returncode
 
@@ -216,7 +232,8 @@ if cs:
   print("Compiler error", cs)
   exit()
 
-meta = open("meta", 'wb')
+meta_fn = "meta." + str(tools.to_int(build))
+meta = open(meta_fn, 'wb')
 symbols = objdump.correct_symbols(objdump.get_symbols())
 pickle.dump((defines, symbols), meta)
 meta.close()
@@ -225,7 +242,7 @@ subprocess.Popen(["avr-size", "-A", folder + "/obj.obj"]).communicate()
 if 1:
   subprocess.Popen(["scp", 
                     folder + "/bin.bin",
-                    folder + "/meta",
+                    folder + "/" + meta_fn,
                     "stefan@stefuc.homeip.net:~/regulacija/"]).communicate()
   subprocess.Popen(["scp", 
                     folder + "/xml/xml.xml",
@@ -234,6 +251,7 @@ if 1:
   #                  folder + "/py/server.py",
                     folder + "/py/gum.py",
                     folder + "/py/rs232.py",
+                    folder + "/py/tools.py",
                     "stefan@stefuc.homeip.net:~/regulacija/"]).communicate()
 if 0:
   subprocess.Popen(["avrdude", "-c", "stk500v2", "-P", "/dev/ttyUSB0", "-p", "m32", "-U", "flash:w:bin.bin"]).communicate()
