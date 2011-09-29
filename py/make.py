@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import sys
 import subprocess
 import pickle
 from datetime import datetime
@@ -9,7 +10,13 @@ import objdump
 import xml_parse
 import tools
 
-build = tools.construct_time()
+if len(sys.argv) >= 2:
+  project = sys.argv[1]
+else:
+  raise Exception("Missing project name.")
+
+
+build_time = tools.mcutime()
 
 defines = {
 #  "F_CPU" : "8000000UL",
@@ -21,13 +28,13 @@ defines = {
 #  "NDEBUG" : "",
   "SPM_PAGESIZE" : 128,
 
-  "BUILD_SEC"     : build[0],
-  "BUILD_MIN"     : build[1],
-  "BUILD_HOUR"    : build[2],
-  "BUILD_WEEKDAY" : build[3],
-  "BUILD_DAY"     : build[4],
-  "BUILD_MONTH"   : build[5],
-  "BUILD_YEAR"    : tools.to_int(build[6:8])
+  "BUILD_SEC"     : build_time.get()[0],
+  "BUILD_MIN"     : build_time.get()[1],
+  "BUILD_HOUR"    : build_time.get()[2],
+  "BUILD_WEEKDAY" : build_time.get()[3],
+  "BUILD_DAY"     : build_time.get()[4],
+  "BUILD_MONTH"   : build_time.get()[5],
+  "BUILD_YEAR"    : tools.to_int(build_time.get()[6:8])
 }
 
 cflags = (
@@ -50,6 +57,7 @@ cflags = (
 "-fno-split-wide-types",
 "-funsigned-char",
 #"-flto",
+#"-nostartfiles",
 
 
 "-Wl,--relax",
@@ -90,36 +98,44 @@ includes = [
 "src/fifo.h",
 ]
 
-sources = (
-"src/main.c",
-"src/timer.c",
-"src/cron.c",
-"src/debug.c",
-"src/sch.c",
-"src/timer_q.c",
-"src/clock.c",
-"src/uart.c",
-"src/crc8.c",
-"src/onewire.c",
-"src/ds18b20.c",
-"src/relay.c",
-"src/port.c",
-"src/lcd.c",
-"src/valve.c",
-"src/loops.c",
-"src/stack_check.c",
-"src/watchdog.c",
-"src/radiator.c",
-"src/furnace.c",
-"src/pumping.c",
-"src/collector.c",
-"src/console.c",
-"src/print.c",
-"src/exexec.c",
-"src/config.c",
-"src/flash.c",
-"src/bootloader.c",
-)
+if   project == "bootloader":
+  sources = (
+    "src/common.c",
+    "src/bootloader.c",
+  )
+elif project == "regulation":
+  sources = (
+    "src/common.c",
+    "src/main.c",
+    "src/timer.c",
+    "src/cron.c",
+    "src/debug.c",
+    "src/sch.c",
+    "src/timer_q.c",
+    "src/clock.c",
+    "src/uart.c",
+    "src/crc8.c",
+    "src/onewire.c",
+    "src/ds18b20.c",
+    "src/relay.c",
+    "src/port.c",
+    "src/lcd.c",
+    "src/valve.c",
+    "src/loops.c",
+    "src/stack_check.c",
+    "src/watchdog.c",
+    "src/radiator.c",
+    "src/furnace.c",
+    "src/pumping.c",
+    "src/collector.c",
+    "src/console.c",
+    "src/print.c",
+    "src/exexec.c",
+    "src/config.c",
+    "src/flash.c",
+  )
+else:
+  raise Exception("Invalid project")
 
 for i in sources:
   if os.path.isfile(i[0:len(i)-1] + "h"):
@@ -130,7 +146,8 @@ def compile(dirn):
   xml_parse.gen_c()
   
   # Common part
-  base_cmd = [ "avr-gcc", "-T", "ld.x", "-I", "src/auto" ]
+  linker_script = "ld_" + sys.argv[1] + ".x"
+  base_cmd = [ "avr-gcc", "-T", linker_script, "-I", "src/auto" ]
   for i in includes:
     base_cmd[len(base_cmd):] = [ "-include", i ]
 
@@ -139,7 +156,7 @@ def compile(dirn):
   base_cmd[len(base_cmd):] = cflags
   
   # Compile
-  objn = dirn + "/obj.obj"
+  objn = dirn + "/" + project + ".obj"
   c = subprocess.Popen(base_cmd + list(sources) + ["-o", objn])
   c.communicate()
   if c.returncode: return c.returncode
@@ -168,11 +185,8 @@ def compile(dirn):
   #if d.returncode: return d.returncode
   
   # obj -> bin
-  binn = dirn + "/bin.bin"
+  binn = dirn + "/" + project + ".bin"
   b = subprocess.Popen(["avr-objcopy", "-R", ".eeprom", "-O", "binary", objn, binn]) 
-  b.communicate()
-  bootloadern = dirn + "/bootloader.bin"
-  b = subprocess.Popen(["avr-objcopy", "-R", ".bootjmp", "-R", ".bootloader", "-R", ".config", "-O", "binary", objn, bootloadern]) 
   b.communicate()
   return b.returncode
 
@@ -232,16 +246,16 @@ if cs:
   print("Compiler error", cs)
   exit()
 
-meta_fn = "meta." + str(tools.to_int(build))
+meta_fn = "meta." + str(build_time)
 meta = open(meta_fn, 'wb')
 symbols = objdump.correct_symbols(objdump.get_symbols())
 pickle.dump((defines, symbols), meta)
 meta.close()
 
-subprocess.Popen(["avr-size", "-A", folder + "/obj.obj"]).communicate()
+subprocess.Popen(["avr-size", "-A", folder + "/" + project + ".obj"]).communicate()
 if 1:
   subprocess.Popen(["scp", 
-                    folder + "/bin.bin",
+                    folder + "/" + project + ".bin",
                     folder + "/" + meta_fn,
                     "stefan@stefuc.homeip.net:~/regulacija/"]).communicate()
   subprocess.Popen(["scp", 

@@ -1,10 +1,21 @@
-#define CLOCK_FREQ      128 //32768
-#define CLOCK_PRESCALER 128
-#define SUBSECOND_MAX (CLOCK_FREQ / CLOCK_PRESCALER)
+#if 60 % CLOCK_LOOP_PERIOD
+  #error
+#endif
+
+#ifndef LOOP_CLOCK
+  #define TOTAL_PRESCALER (CLOCK_PRESCALER * 256) /* prescaler & counter width */
+  #define SUBPERIOD_MAX (CLOCK_FREQ * CLOCK_LOOP_PERIOD / TOTAL_PRESCALER)
+  #if CLOCK_FREQ % TOTAL_PRESCALER
+    #error
+  #endif
+#endif
 
 void clock_init()
 {
-  ASSR = 0x09;
+#ifndef LOOP_CLOCK
+#if !SAME_OSCILLATOR
+  ASSR = 0x08;
+#endif
 #if   CLOCK_PRESCALER == 1
   TCCR2 = 0x1;
 #elif CLOCK_PRESCALER == 8
@@ -24,6 +35,7 @@ void clock_init()
 #endif
   TIFR  |= (1 << TOV2 );
   TIMSK |= (1 << TOIE2);
+#endif
 }
 
 date_t date;
@@ -50,54 +62,60 @@ void daylight_saving(uint16_t hours)
   date.hour += (int8_t)hours;
 }
 
+#ifndef LOOP_CLOCK
 DBG_ISR(TIMER2_OVF_vect,)
 {
-#if   SUBSECOND_MAX == 1
-  uint8_t subsecond = 0;
-#elif SUBSECOND_MAX < (1 << 8)
-  static uint8_t subsecond;
-#elif SUBSECOND_MAX < (1 << 16)
-  static uint16_t subsecond;
-#elif SUBSECOND_MAX < (1 << 32)
-  static uint32_t subsecond;
+#if   SUBPERIOD_MAX == 1
+  uint8_t subperiod = 0;
+#elif SUBPERIOD_MAX < (1 << 8)
+  static uint8_t subperiod;
+#elif SUBPERIOD_MAX < (1 << 16)
+  static uint16_t subperiod;
+#elif SUBPERIOD_MAX < (1 << 32)
+  static uint32_t subperiod;
 #else
   #error
 #endif
 
-  subsecond++;
-  if (subsecond >= SUBSECOND_MAX) {
-    subsecond = 0;
+  subperiod++;
+  if (subperiod >= SUBPERIOD_MAX) {
+    subperiod = 0;
+    clock_loop();
+  }
+}
+#endif
 
-    static uint32_t uptime;
-    uptime++;
-    
-    if (date.year) { // year must be set to enable clock & cron
-      date.sec++;
-      if (date.sec >= 60) {
-        date.sec = 0;
-        date.min++;
-        if (date.min >= 60) {
-          date.min = 0;
-          date.hour++;
-          if (date.hour >= 24) {
-            date.hour = 0;
-            date.day++;
-            if (date.day >= month_len()) {
-              date.day = 0;
-              date.month++;
-              if (date.month >= 12) {
-                date.month = 0;
-                date.year++;
-              }
+void clock_loop()
+{
+  static uint32_t uptime;
+  uptime += CLOCK_LOOP_PERIOD;
+  
+  if (date.year) { // year must be set to enable clock & cron
+    date.sec += CLOCK_LOOP_PERIOD;
+    if (date.sec >= 60) {
+      date.sec = 0;
+      date.min++;
+      if (date.min >= 60) {
+        date.min = 0;
+        date.hour++;
+        if (date.hour >= 24) {
+          date.hour = 0;
+          date.day++;
+          if (date.day >= month_len()) {
+            date.day = 0;
+            date.month++;
+            if (date.month >= 12) {
+              date.month = 0;
+              date.year++;
             }
-            
-            date.weekday++;
-            if (date.weekday >= 7) date.weekday = 0;
           }
+          
+          date.weekday++;
+          if (date.weekday >= 7) date.weekday = 0;
         }
-
-        sch_add(cron);
       }
+
+      sch_add(cron);
     }
   }
 }

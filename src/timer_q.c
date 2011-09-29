@@ -14,14 +14,6 @@ static slot_t slot [MAX_TIMERS];
 static ptr_t first = MAX_TIMERS;
 static timer_t timer_tracked;
 
-DBG func_t last_timer_func;
-
-void timer_debug()
-{
-  DBG_COPY(slot);
-  DBG_COPY(first);
-}
-
 void timer_init()
 {
   for (ptr_t i = 0; i < MAX_TIMERS; i++) slot[i].next = MAX_TIMERS;
@@ -57,7 +49,7 @@ void timer_int()
 #ifdef NDEBUG
     c.func(c.arg);
 #else
-    log_adr();
+    DBG2CP static func_t last_timer_func;
     last_timer_func = c.func;
     c.func(c.arg);
     last_timer_func = 0;

@@ -19,11 +19,14 @@ static ds18b20_t ds18b20_tab [DS18B20_NR]; // zeros are fine - no need to initia
 static const uint8_t eeprom_val     = 0xbd;
 static const uint8_t scratchpad_val = 0xdb;
 
+
+//
+// Error & Handling / Debug stuff
+//
 jmp_buf * ds18b20_err_handler = 0;
 
 enum {
   ERR_NO_PRESENCE,
-  ERR_CRC_ROM,
   ERR_SCRATCHPAD_0,
   ERR_SCRATCHPAD_CRC,
   ERR_EEPROM_WRITE,
@@ -71,7 +74,7 @@ static void ds18b20_match_rom(DS18B20 i)
 {
   rom_t romi;
   for (uint8_t j = 0; j < sizeof(rom_t); j++)
-    romi[j] = pgm_read_byte((uint8_t *)&(rom[i]) + j);
+    romi.rom[j] = pgm_read_byte(&rom[i].rom[j]);
   if (onewire_match_rom(romi)) ds18b20_error(i, ERR_NO_PRESENCE);
 }
 
@@ -207,8 +210,8 @@ temp_t ds18b20_read_temp(DS18B20 i)
     ds18b20_error(i, ERR_TEMP);
   }
 
-  //return *((temp_t *)&scratchpad[0]) << 4;
-  return (scratchpad[1] << 12) | (scratchpad[0] << 4);
+  return (scratchpad[1] << 12)
+       | (scratchpad[0] <<  4);
 }
 
 temp_t ds18b20_get_temp_bare(DS18B20 i, RESOLUTION r)
@@ -221,14 +224,16 @@ temp_t ds18b20_get_temp_bare(DS18B20 i, RESOLUTION r)
   return ds18b20_read_temp(i);
 }
 
-temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
+USED temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
 {
-  volatile uint8_t try = 0;
-  volatile timer_t rst_time = TIMER_MS(10);
+  static volatile uint8_t try; // I had to add static (in a case when this func was called on one place only, i think)
+  try = 0;
+  static volatile timer_t rst_time;
+  rst_time = TIMER_MS(10);
 
   jmp_buf tmp_eh;
-  uint8_t errno = setjmp(tmp_eh);
   ds18b20_err_handler = &tmp_eh;
+  uint8_t errno = setjmp(tmp_eh);
   
   temp_t val;
 
@@ -258,65 +263,3 @@ temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
 
   return val;
 }
-
-#if 0
-void ds18b20_sprint_temp_int(char * str, temp_t temp)
-{
-  /* str must be 4 characters long: from -55 to 125 plus null */
-  if (temp == -1) sprintf(str, "%s", "ERR");
-  else            sprintf(str, "%3d", TEMP2I(temp));
-}
-
-void ds18b20_sprint_temp_fp (char * str, temp_t temp)
-{
-#if 0
-  const uint8_t R1R0 = 3;
-#if 1
-  switch (R1R0) {
-    case 0:
-      if (temp & 0x000f) sprintf(str, "%s", "-----");
-      else               sprintf(str, "%d.%01d", temp >> 8,  ((temp >> 7) & 0x1) * 5);
-      break;
-    case 1:
-      if (temp & 0x000f) sprintf(str, "%s", "------");
-      else               sprintf(str, "%d.%02d", temp >> 8,  ((temp >> 6) & 0x3) * 25);
-      break;
-    case 2:
-      if (temp & 0x000f) sprintf(str, "%s", "-------");
-      else               sprintf(str, "%d.%03d", temp >> 8,  ((temp >> 5) & 0x7) * 125);
-      break;
-    default:
-      if (temp & 0x000f) sprintf(str, "%s", "--------");
-      else               sprintf(str, "%d.%04d", temp >> 8,  ((temp >> 4) & 0xf) * 625);
-      break;
-  }
-#else
-  switch (R1R0) {
-    case 0:
-      if (temp & 0x000f) sprintf(str, "%s", "-----");
-      else               sprintf(str, "%.1f", temp / 256.0);
-      break;
-    case 1:
-      if (temp & 0x000f) sprintf(str, "%s", "------");
-      else               sprintf(str, "%.2f", temp / 256.0);
-      break;
-    case 2:
-      if (temp & 0x000f) sprintf(str, "%s", "-------");
-      else               sprintf(str, "%.3f", temp / 256.0);
-      break;
-    default:
-      if (temp & 0x000f) sprintf(str, "%s", "--------");
-      else               sprintf(str, "%.4f", temp / 256.0);
-      break;
-  }
-#endif
-#else
-      if (temp & 0x000f) sprintf(str, "%s", "--------");
-      else {
-        bool sign  = temp < 0;
-        temp_t abs = sign ? -temp : temp;
-        sprintf(str, "%s%d.%04d", sign ? "-" : "",  TEMP2I(abs), ((abs >> 4) & 0xf) * 625);
-      }
-#endif
-}
-#endif

@@ -3,6 +3,6 @@
 
 #include "config_list.h"
 
-#define CONFIG_READ(dst, src) flash_read((uint8_t *)&dst, (uintptr_t)&src, sizeof(dst))
+#define CONFIG_READ(dst, src) typeof(src) dst; flash_read((uint8_t *)&dst, (uintptr_t)&src, sizeof(src))
 
 #endif

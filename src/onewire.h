@@ -8,7 +8,9 @@
 #define onewire_slave_dly  onewire_z_dly
 #define onewire_idle_dly   onewire_1_dly
 
-typedef uint8_t rom_t [8];
+typedef struct {
+  uint8_t rom [8];
+} rom_t;
 
 void onewire_0();
 void onewire_z();
@@ -22,7 +24,7 @@ uint8_t onewire_read8();
 void onewire_write_l(const uint8_t * const dat, uint8_t len);
 void onewire_read_l(uint8_t * dat, uint8_t len);
 
-void onewire_search_rom();
+uint8_t onewire_search_rom(rom_t * tab, uint8_t tab_len, rom_t min);
 bool onewire_match_rom(const rom_t rom); // 0 for skip
 
 void onewire_0_dly (double t);

@@ -183,57 +183,55 @@ void onewire_read_l(uint8_t * dat, uint8_t len)
 //
 // ROM commands
 //
-void onewire_search_rom()
+USED uint8_t onewire_search_rom(rom_t * tab, uint8_t tab_len, rom_t min)
 {
-  printf("Searching for 1-Wire devices...\n");
-
-  uint64_t device [16];
+  min = (rom_t){ { 0 } }; // TODO remove - this was done for testing with exexec
   uint8_t nr = 0;
-  uint64_t min;
-  uint8_t colision = 0;
+  uint8_t colision [2] = {8, 8};
 
-  do {
-    device[nr] = 0;
-
-    min = nr ? (device[nr - 1] & (((uint64_t)1 << colision) - 1)) | ((uint64_t)1 << colision): 0;
-
-    if (onewire_reset()) {
-      printf("None found!\n");
-      break;
-    }
+  while (1) {
+    if (onewire_reset()) break;
     onewire_write8(0xf0);
 
-    for (uint8_t i = 0; i < 64; i++) {
-      bool zero = !onewire_read();
-      bool one  = !onewire_read();
+    for (uint8_t i = 0; i < 8; i++) {
+      for (uint8_t j = 0; j < 8; j++) {
+        bool zero = !onewire_read();
+        bool one  = !onewire_read();
 
-      if (zero && one) {
-        if (min & ((uint64_t)1 << i)) {
-          zero = 0;
-        } else
-          colision = i;
-      }
+        if (zero && one) {
+          if (min.rom[i] & (1 << j)) {
+            zero = 0;
+          } else {
+            colision[0] = i;
+            colision[1] = j;
+          }
+        }
 
-      if (zero) {
-        onewire_write(0);
-      } else {    
-        onewire_write(1);
-        device[nr] |= ((uint64_t)1 << i);
+        if (zero) {
+          onewire_write(0);
+        } else {    
+          onewire_write(1);
+          min.rom[i] |= 1 << j;
+        }
       }
     }
 
-    printf("[%d] %02x:%04x%08lx:%02x\n", nr, (uint8_t)(device[nr] >> 56), 
-                                            (uint16_t)(device[nr] >> 40),
-                                            (uint32_t)(device[nr] >>  8), 
-                                             (uint8_t)(device[nr] >>  0));
-    
-    if (*((uint8_t *)&device[nr] + 7) != crc8((uint8_t *)&device[nr], 7))
-      printf("CRC error!\n");
+    //if (crc8(&curr.rom[0], 7) != curr.rom[7]) continue; // TODO?
+  
+    if (nr < tab_len) tab[nr] = min;
+    nr++;
+   
+    if (colision[0] < 8) {
+      min.rom[colision[0]] &= (1 << colision[1]) - 1;
+      min.rom[colision[0]] |= (1 << colision[1]);
+      for (uint8_t i = colision[0] + 1; i < 8; i++) min.rom[i] = 0x00;
+      colision[0] = 8;
+    } else {
+      break;
+    }
+  }
 
-    device[++nr] = 0;
-  } while (!(min & (uint64_t)1 << colision));
-
-  printf("done!\n");
+  return nr;
 }
 
 bool onewire_match_rom(const rom_t rom)
@@ -242,9 +240,9 @@ bool onewire_match_rom(const rom_t rom)
   if (onewire_reset()) {
     return 1;
   } else {
-    if (rom) {
+    if (rom.rom[0]/* || rom.rom[1] || ...*/) {
       onewire_write8(0x55);
-      onewire_write_l(rom, 8);
+      onewire_write_l(rom.rom, 8);
     } else {
       onewire_write8(0xcc);
     }

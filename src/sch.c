@@ -2,13 +2,6 @@ static volatile func_t queue[QUEUE_LEN] = { 0 };
 static uint8_t wp = 0;
 static uint8_t rp = 0;
 
-DBG func_t last_sch_func;
-
-void sch_debug()
-{
-  DBG_COPY(queue);
-}
-
 static uint8_t pinc(uint8_t p)
 {
   p++;
@@ -38,7 +31,7 @@ void sch()
 #ifdef NDEBUG
     func();
 #else
-    log_adr();
+    DBG2CP static func_t last_sch_func;
     last_sch_func = func;
     func();
     last_sch_func = 0;

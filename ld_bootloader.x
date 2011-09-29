@@ -3,7 +3,8 @@ OUTPUT_FORMAT("elf32-avr","elf32-avr","elf32-avr")
 OUTPUT_ARCH(avr:5)
 MEMORY
 {
-  text   (rx)   : ORIGIN = 0, LENGTH = 32K
+  jmp    (rx)   : ORIGIN = 0x0000, LENGTH = 128
+  text   (rx)   : ORIGIN = 0x7c00, LENGTH = 32K - 0x7c00
   data   (rw!x) : ORIGIN = 0x800060, LENGTH = 2K
   eeprom (rw!x) : ORIGIN = 0x810000, LENGTH = 1K
 }
@@ -143,26 +144,15 @@ SECTIONS
     KEEP (*(.fini0))
      _etext = . ;
   }  > text
-  .config 0x6000 :
+  .jmp : AT (ADDR (.text) + SIZEOF (.text))
   {
-    PROVIDE (__config_start = .) ;
-    *(.config)
-    PROVIDE (__config_end = .) ;
-    . = ALIGN(128);
-    PROVIDE (__meta_start = .) ;
-    *(.meta)
-    PROVIDE (__meta_end = .) ;
-  }  > text
-  .bootjmp 0x7000 :
-  {
-    *(.bootjmp)
-  }  > text
+    *(.jmp)
+  } > jmp
+  __jmp_load_start = LOADADDR(.jmp);
+  __jmp_load_end = __jmp_load_start + SIZEOF(.jmp);
   .bootloader   :
   {
     *(.bootloader)
-    PROVIDE (__writeallow_start = .) ;
-    *(.writeallow)
-    PROVIDE (__writeallow_end = .) ;
   }  > text
   .data	  : AT (ADDR (.text) + SIZEOF (.text))
   {

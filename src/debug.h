@@ -1,4 +1,5 @@
-#define DBG __attribute__((section(".dbg")))
+#define DBG    __attribute__((section(".dbg")))
+#define DBG2CP __attribute__((section(".dbg2cp")))
 
 #ifdef NDEBUG
   #define assert(e)	        ((void)0)
@@ -11,7 +12,6 @@ extern func_t last_isr;
 extern volatile void * last_adr;
 extern void * last_assert;
 extern func_t  isr_max;
-extern timer_t isr_max_time;
 void log_adr();
 
 #define DBG_COPY(name) \
@@ -34,6 +34,7 @@ void log_adr();
       last_isr = 0; \
       timer_t end = timer_now(); \
       timer_t time = end - start; \
+      extern timer_t isr_max_time; \
       if (time > isr_max_time) { \
         isr_max_time = time; \
         isr_max = vector; \

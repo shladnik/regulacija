@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import os, sys
 import time
 import pickle
 import threading
@@ -13,6 +14,19 @@ def read_symbol(name, shape=int):
     arr = read_flash(symbols[name]['adr'], bytearray(symbols[name]['size']))
   else:
     arr = rs232.access(0, symbols[name]['adr'], bytearray(symbols[name]['size']))
+
+  if shape == int:
+    return tools.to_int(arr)
+  else:
+    return arr
+
+def read_symbol_dbgcp(name, shape=int):
+  if symbols[name]['mem'] == 'ram' and \
+     symbols['__dbg2cp_start']['adr'] <= symbols[name]['adr'] < symbols['__dbg2cp_end']['adr']:
+    offset = symbols['__dbgcp_start']['adr'] - symbols['__dbg2cp_start']['adr']
+    arr = rs232.access(0, symbols[name]['adr'] + offset, bytearray(symbols[name]['size']))
+  else:
+    raise Exception("Not a dbgcp symbol.")
 
   if shape == int:
     return tools.to_int(arr)
@@ -48,25 +62,27 @@ def write_flash(adr, dat):
 # Flashing stuff
 #
 
-def flash(f):
+def flash_fw(f):
   try:
     print("Entering bootloader...")
-    exexec('bootjmp', block = False)
+    exexec(symbols['__bootloader_adr']['adr'], block = False)
   except:
-    print("Error... try if it's already running...")
-    time.sleep(4.0)
+    print("Error... trying if it's already running...")
+    time.sleep(1.0)
     rs232.flush()
   
-  if rs232.get(timeout = 10.0) != 0xa5: raise Exception("Failed to start bootloader")
-  print("Bootloader started! Flashing...")
+  print("Waiting for initial ACK...")
+  if rs232.get(timeout = 30.0) != 0xa5: raise Exception("Failed to start bootloader")
   
   with rs232.rs232.lock:
+    print("Bootloader started! Flashing...")
+  
     start = time.clock()
  
     binary = bytearray(f.read())
     binary.reverse()
     size = len(binary)
-    print("size:", size)
+    print("Size:", size)
     if not (0 < size <= 32 * 1024): raise Exception("File size error")
  
     size_pac = tools.to_bytes(size, 2)
@@ -89,9 +105,21 @@ def flash(f):
   else:                   print("Succeed!")
   
   time.sleep(1.0)
+  print("Reconnecting...")
+  connect()
   print("Reinitializing debuging stuff...")
-  exexec('dbg_init')
+  exexec('debug_init')
 
+def flash_bootloader(f):
+  adr = symbols['__bootloader_adr']['adr']
+  while 1:
+    page = bytearray(f.read(defines['SPM_PAGESIZE']))
+    if len(page):
+      write_symbol('flash_buf', page)
+      exexec('flash_write_block', [ symbols['flash_buf']['adr'], adr, len(page) ])
+      adr += defines['SPM_PAGESIZE']
+    else:
+      break
 
 def readcon(max_read=1.0):
   buf  = symbols["print_buf"]['adr']
@@ -185,8 +213,9 @@ def exexec(func, arg = [0, 0, 0, 0], block = True):
 
 
 def ds18b20_get_temp(i, resolution = 0, rty = 1):
-  val = exexec("ds18b20_get_temp", [ i, resolution, rty ])
-  val = val[0]/256.0
+  val = exexec("ds18b20_get_temp", [ i, resolution, rty ])[0]
+  if val >= 0x8000: val = -(~val)
+  val = val/256.0
   return val
 
 
@@ -209,23 +238,59 @@ def set_time(t = time.localtime(), format = None):
 
 
 
-def connect():
-  build = ""
-  rs232.start(230400)
-  for rs232.rs232.baudrate in [ 230400, 115200, 9600, 2400 ]:
-    try:
-      print("BAUD:", rs232.rs232.baudrate)
-      build = str(tools.to_int(rs232.access(0, 0x60, bytearray(8))))
-      break
-    except:
-      continue
-    print('Failed to connect!')
-    exit()
+def connect(rate = None, meta = None):
+  build = None
+  if rate:
+    rs232.rs232.baudrate = rate
+    build = tools.mcutime(rs232.access(0, 0x60, bytearray(8)))
+  else:
+    rates = [ 230400, 115200, 9600, 2400 ]
+    for rs232.rs232.baudrate in rates:
+      try:
+        build = tools.mcutime(rs232.access(0, 0x60, bytearray(8)))
+        break
+      except Exception as inst:
+        print(inst)
+        if rs232.rs232.baudrate == rates[-1]:
+          print('Failed to autoconnect baud! Using failback - first in a list.')
+          rs232.rs232.baudrate = rates[0]
+        else:
+          continue
+  
+  print("BAUD:", rs232.rs232.baudrate)
 
-  meta = open("meta." + build, 'rb')
+  if build:
+    valid_meta = "meta." + str(build)
+    if meta and meta != valid_meta:
+      print("Detected build seem different than provided!")
+    else:
+      meta = valid_meta
+
+  if not os.path.isfile(meta): 
+    print("Requested meta not found! Using failback - latest found.")
+    filelist = os.listdir(os.getcwd())
+    filelist = filter(lambda x: not os.path.isdir(x), filelist)
+    filelist = filter(lambda x: x[0:4] == "meta", filelist)
+    meta = max(filelist, key=lambda x: os.stat(x).st_mtime)
+
+  print("meta: ", meta)
+
+  meta = open(meta, 'rb')
   pickled = pickle.load(meta)
   global defines, symbols
   defines = pickled[0]
   symbols = pickled[1]
+  rs232.max_write_len = symbols['rx_buf']['size']
 
-connect()
+
+if len(sys.argv) > 1:
+  baud = int(sys.argv[1])
+else:
+  baud = None
+
+if len(sys.argv) > 2:
+  meta = sys.argv[2]
+else:
+  meta = None
+
+connect(baud, meta)

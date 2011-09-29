@@ -1,5 +1,5 @@
-#ifndef __MAIN_H__
-#define __MAIN_H__
+#ifndef __COMMON_H__
+#define __COMMON_H__
 
 #define NOINIT __attribute__((section(".noinit")))
 #define META   __attribute__((section(".meta")))

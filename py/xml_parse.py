@@ -8,10 +8,10 @@ def ds18b20_list(element, c, h):
   
   for d in element.findall(name):
     rom = d.attrib['rom']
-    c.write("{ ")
+    c.write("{ { ")
     for i in range(0,len(rom),2):
       c.write("0x" + rom[i:i+2] + ", ")
-    c.write("},\n")
+    c.write("} },\n")
 
     h.write(cname_base + d.attrib['cname'] + ',\n')
 

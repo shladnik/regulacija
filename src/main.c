@@ -1,12 +1,12 @@
 /* must be on the start of data section, so it can always be read, independant of version */
 __attribute__((section(".build"))) USED date_t build = {
-  BUILD_SEC,
-  BUILD_MIN,
-  BUILD_HOUR,
-  BUILD_WEEKDAY,
-  BUILD_DAY,
-  BUILD_MONTH,
-  BUILD_YEAR,
+  (uint8_t)BUILD_SEC,
+  (uint8_t)BUILD_MIN,
+  (uint8_t)BUILD_HOUR,
+  (uint8_t)BUILD_WEEKDAY,
+  (uint8_t)BUILD_DAY,
+  (uint8_t)BUILD_MONTH,
+  (uint16_t)BUILD_YEAR,
 };
 
 int main()

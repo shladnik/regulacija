@@ -1,6 +1,6 @@
-volatile void *  last_adr;
-timer_t last_time;
-func_t  last_isr;
+DBG2CP volatile void *  last_adr;
+DBG2CP timer_t last_time;
+DBG2CP func_t  last_isr;
 
 DBG func_t  isr_max;
 DBG timer_t isr_max_time;
@@ -26,8 +26,9 @@ __attribute__((always_inline)) void __assert()
 #else
 void __assert()
 {
-  assert_log[assert_cnt] = __builtin_return_address(0);
-  if (assert_cnt < sizeof(assert_log) / sizeof(assert_log[0]) - 1) assert_cnt++;
+  const uint8_t log_len = sizeof(assert_log) / sizeof(assert_log[0]);
+  assert_log[MIN(assert_cnt, log_len - 1)] = __builtin_return_address(0);
+  if (assert_cnt < (typeof(assert_cnt))-1) assert_cnt++;
   watchdog_mcu_reset();
 }
 #endif
@@ -38,12 +39,13 @@ DBG_ISR(BADISR_vect, ISR_BLOCK)
 }
 
 
-USED void dbg_init()
+USED void debug_init()
 {
   stack_check_init();
-  extern uint8_t __data_end;
-  extern uint8_t __bss_start;
-  for (uint8_t * i = &__data_end; i < &__bss_start; i++) *i = 0x00;
+  
+  extern uint8_t __dbg_start;
+  extern uint8_t __dbg_end;
+  for (uint8_t * i = &__dbg_start; i < &__dbg_end; i++) *i = 0x00;
 }
 
 __attribute__((section(".init3"), naked, used))
@@ -54,7 +56,7 @@ void debug()
   MCUCSR = MCUCSR & ~RFMASK;
 
   if (rst_src & ~(1 << WDRF)) {
-    dbg_init();
+    debug_init();
   } else {
     if (rst_src & (1 << WDRF)) {
       DBG static uint8_t wdrf_cnt;
@@ -64,11 +66,11 @@ void debug()
       reboot_cnt++;
     }
  
-    DBG_COPY(last_adr);
-    DBG_COPY(last_time);
-    DBG_COPY(last_isr);
-    //extern void timer_debug(); timer_debug();
-    //extern void exexec_debug(); exexec_debug();
+    extern uint8_t __dbg2cp_start;
+    extern uint8_t __dbg2cp_end;
+    extern uint8_t __dbgcp_start;
+    uintptr_t offset = &__dbgcp_start - &__dbg2cp_start;
+    for (uint8_t * i = &__dbg2cp_start; i < &__dbg2cp_end; i++) *(i + offset) = *i;
   }
  
   DBG static uint8_t rst_src_last, rst_src_all;

@@ -1,25 +1,34 @@
-INLINE bool config_range(uintptr_t adr, uintptr_t len)
+bool config_range(uintptr_t adr, uintptr_t len)
 {
   extern uint8_t __config_start;
   extern uint8_t __config_end;
-  return (uintptr_t)&__config_start <= (adr + len) && (adr + len) < (uintptr_t)&__config_end;
+  uintptr_t first = adr;
+  uintptr_t last  = adr + len - 1;
+  return (uintptr_t)&__config_start <= first && first < (uintptr_t)&__config_end &&
+         (uintptr_t)&__config_start <= last  && last  < (uintptr_t)&__config_end;
 }
 
-INLINE bool meta_range(uintptr_t adr, uintptr_t len)
+bool meta_range(uintptr_t adr, uintptr_t len)
 {
   extern uint8_t __meta_start;
   extern uint8_t __meta_end;
-  return (uintptr_t)&__meta_start <= (adr + len) && (adr + len) < (uintptr_t)&__meta_end;
+  uintptr_t first = adr;
+  uintptr_t last  = adr + len - 1;
+  return (uintptr_t)&__meta_start <= first && first < (uintptr_t)&__meta_end &&
+         (uintptr_t)&__meta_start <= last  && last  < (uintptr_t)&__meta_end;
 }
 
-BOOTLOADER_SECTION void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
+bool writeallow_range(uintptr_t adr, uintptr_t len)
 {
-  assert(0);
-  uintptr_t call_adr = (uintptr_t)__builtin_return_address(0);
-  extern uint8_t __writeallow_start;
-  extern uint8_t __writeallow_end;
+  (void)len;
+  extern uint8_t __fw_end;
+  return adr > ((uintptr_t)&__fw_end | (SPM_PAGESIZE - 1));
+}
 
-  if (1 || config_range(adr, len) || ((uintptr_t)&__writeallow_start <= call_adr && call_adr < (uintptr_t)&__writeallow_end)) {
+__attribute__((section(".flash_write")))
+void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
+{
+  if (config_range(adr, len) || writeallow_range(adr, len)) {
     uintptr_t start = adr;
     uintptr_t end   = adr + len;
     uintptr_t i = ~(SPM_PAGESIZE - 1) & start;
@@ -61,12 +70,12 @@ BOOTLOADER_SECTION void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_
       }
       for (; i < e; i += 2) boot_page_fill(i, pgm_read_word(i));
       
-      //if (change) {
+      if (change) {
         boot_page_erase(adr);
         boot_spm_busy_wait();
         boot_page_write(adr);
         boot_spm_busy_wait();
-      //}
+      }
       boot_rww_enable();
     }
   }
@@ -105,12 +114,12 @@ USED void flash_write(uint8_t * buf, uintptr_t adr, uintptr_t len)
 
 USED void flash_read(uint8_t * buf, uintptr_t adr, uintptr_t len)
 {
-  if (config_range(adr, len) || meta_range(adr, len)) return;
-
-  uintptr_t end = adr + len;
-  while (adr < end) {
-    *buf = pgm_read_byte(adr);
-    adr++;
-    buf++;
+  if (config_range(adr, len) || meta_range(adr, len)) {
+    uintptr_t end = adr + len;
+    while (adr < end) {
+      *buf = pgm_read_byte(adr);
+      adr++;
+      buf++;
+    }
   }
 }

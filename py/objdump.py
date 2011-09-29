@@ -1,14 +1,17 @@
 #!/usr/bin/python3
 
 import subprocess
+import os
 
-base_cmd = [ "avr-objdump", "-t", "obj.obj" ]
+base_cmd = [ "avr-objdump", "-t" ]
 ram_sections = [ ".noinit", ".bss", ".data", ".dbg" ]
 rom_sections = [ ".text", ".config" ]
 
-def get_symbols(sections = []):
+def get_symbols(sections = [], objs = None):
+  if not objs:
+    objs = list(filter(lambda x: x[-4:] == ".obj" , os.listdir(".")))
   symbol = {}
-  cmd = list(base_cmd)
+  cmd = base_cmd + objs
   for s in sections:
     cmd[len(cmd):] = [ "-j", s ]
   p = subprocess.Popen(cmd, bufsize=-1, stdout=subprocess.PIPE)

@@ -4,6 +4,9 @@ typedef struct {
 } loop_t;
 
 const loop_t loop [] PROGMEM = {
+#ifdef LOOP_CLOCK
+  { clock_loop    , TIMER_S(CLOCK_LOOP_PERIOD) },
+#endif
   { lcd_loop      , TIMER_S(10)  },
   { pumping_loop  , TIMER_MIN(1) },
   { collector_loop, TIMER_S(30)  },
