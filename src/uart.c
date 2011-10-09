@@ -1,26 +1,40 @@
-typedef enum {
-  ADR_SIZE,
-  ADR     ,
-  DAT_SIZE,
-  DAT     ,
-  CRC     ,
-} pac_state_t;
+#define TX_QUEUE_LEN 2
 
 pac_state_t rx_state = ADR_SIZE;
-bool        rx_write;
-uint8_t *   rx_adr;
-uint8_t     rx_adr_len;
-uint8_t     rx_dat_len;
+pac_t       rx;
 uint8_t     rx_crc = 0;
 uint8_t     rx_buf [16];
 bool        rx_timer = 0;
 
 pac_state_t tx_state = ADR_SIZE;
-bool        tx_write;
-uint8_t *   tx_adr;
-uint8_t     tx_adr_len;
-uint8_t     tx_dat_len;
+pac_t       tx_queue [TX_QUEUE_LEN];
 uint8_t     tx_crc = 0;
+
+static uint8_t wp;
+static uint8_t rp;
+
+static uint8_t pinc(uint8_t p)
+{
+  p++;
+  if (p >= TX_QUEUE_LEN) p = 0;
+  return p;
+}
+
+void send(pac_t p)
+{
+#ifndef NDEBUG
+  DBG static uint8_t tx_busy;
+  if    (wp == rp && (UCSRB & (1 << UDRIE)) && (tx_busy < (typeof(tx_busy))-1)) tx_busy++;
+#endif
+  while (wp == rp && (UCSRB & (1 << UDRIE)));
+  tx_queue[wp] = p;
+  
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    wp = pinc(wp);
+    UCSRB |= 1 << UDRIE;
+  }
+}
+
 
 void rx_reset()
 {
@@ -68,18 +82,18 @@ DBG_ISR(USART_RXC_vect, ISR_BLOCK)
     switch (rx_state) {
       case ADR_SIZE: {
         if ((byte & 0x7f) <= 2) {
-          rx_write   = byte & 0x80;
-          rx_adr_len = byte & 0x03;
-          rx_adr = 0;
-          i = rx_adr_len - 1;
-          rx_state = rx_adr_len ? ADR : DAT_SIZE;
+          rx.write   = byte & 0x80;
+          rx.adr_len = byte & 0x03;
+          rx.adr = 0;
+          i = rx.adr_len - 1;
+          rx_state = rx.adr_len ? ADR : DAT_SIZE;
         } else {
           err = 1;
         }
         break;
       }
       case ADR: {
-        uint8_t * adr_p = (uint8_t *)(&rx_adr);
+        uint8_t * adr_p = (uint8_t *)(&rx.adr);
         if (i) {
           adr_p[1] = byte;
           i = 0;
@@ -90,9 +104,9 @@ DBG_ISR(USART_RXC_vect, ISR_BLOCK)
         break;
       }
       case DAT_SIZE: {
-        rx_dat_len = byte;
-        if (rx_write) {
-          if (rx_dat_len > sizeof(rx_buf)) {
+        rx.dat_len = byte;
+        if (rx.write) {
+          if (rx.dat_len > sizeof(rx_buf)) {
             err = 1;
           } else {
             i = 0;
@@ -105,31 +119,22 @@ DBG_ISR(USART_RXC_vect, ISR_BLOCK)
       }
       case DAT: {
         rx_buf[i++] = byte;
-        if (i >= rx_dat_len) rx_state = CRC;
+        if (i >= rx.dat_len) rx_state = CRC;
         break;
       }
       default: {
         if (rx_crc) {
           err = 1;
         } else {
-          if (rx_write) {
-            for (uint8_t i = 0; i < rx_dat_len; i++) {
-              *(rx_adr+i) = rx_buf[i];
+          if (rx.write) {
+            for (uint8_t i = 0; i < rx.dat_len; i++) {
+              *(rx.adr+i) = rx_buf[i];
             }
           }
-
-          if (UCSRB & (1 << UDRIE)) {
-#ifndef NDEBUG
-            DBG static uint8_t tx_busy;
-            if (tx_busy < (typeof(tx_busy))-1) tx_busy++;
-#endif
-          } else {
-            tx_write    = rx_write ? 0 : 1;
-            tx_adr      = rx_adr;
-            tx_adr_len  = rx_adr_len;
-            tx_dat_len  = rx_dat_len;
-            UCSRB |= 1 << UDRIE;
-          }
+          
+          pac_t response = rx;
+          response.write = response.write ? 0 : 1;
+          send(response);
           rx_state = ADR_SIZE;
         }
         break;
@@ -168,34 +173,36 @@ DBG_ISR(USART_UDRE_vect, ISR_BLOCK)
 
   switch (tx_state) {
     case ADR_SIZE: {
-      byte = tx_adr_len;
-      if (tx_write) byte |= 0x80;
-      tx_state = tx_adr_len ? ADR : DAT_SIZE;
+      byte = tx_queue[rp].adr_len;
+      if (tx_queue[rp].write) byte |= 0x80;
+      tx_state = tx_queue[rp].adr_len ? ADR : DAT_SIZE;
       break;
     }
     case ADR: {
-      tx_adr_len--;
-      uint8_t * adr_ptr = (uint8_t *)(&tx_adr);
-      byte = adr_ptr[tx_adr_len];
-      if (tx_adr_len == 0) tx_state = DAT_SIZE;
+      tx_queue[rp].adr_len--;
+      uint8_t * adr_ptr = (uint8_t *)(&tx_queue[rp].adr);
+      byte = adr_ptr[tx_queue[rp].adr_len];
+      if (tx_queue[rp].adr_len == 0) tx_state = DAT_SIZE;
       break;
     }
     case DAT_SIZE: {
-      byte = tx_dat_len;
-      tx_state = tx_write && tx_dat_len ? DAT : CRC;
+      byte = tx_queue[rp].dat_len;
+      tx_state = tx_queue[rp].write && tx_queue[rp].dat_len ? DAT : CRC;
       break;
     }
     case DAT: {
-      tx_dat_len--;
-      byte = *tx_adr;
-      tx_adr++;
-      if (tx_dat_len == 0) tx_state = CRC;
+      tx_queue[rp].dat_len--;
+      byte = *tx_queue[rp].adr;
+      tx_queue[rp].adr++;
+      if (tx_queue[rp].dat_len == 0) tx_state = CRC;
       break;
     }
     default: { // CRC
       byte = tx_crc;
       tx_state = ADR_SIZE;
-      UCSRB &= ~(1 << UDRIE);
+
+      rp = pinc(rp);
+      if (wp == rp) UCSRB &= ~(1 << UDRIE);
       break;
     }
   }

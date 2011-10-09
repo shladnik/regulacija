@@ -1,5 +1,6 @@
 import time
 
+# Python3.2 has this build in - but currently I'm on 3.1
 def to_int(arr):
   int_val = 0
   for i in range(len(arr)):

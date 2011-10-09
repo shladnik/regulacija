@@ -22,6 +22,7 @@ void exexec()
     {
       exexec_func = 0;
     }
+    send((pac_t){ 1, sizeof(&exexec_func), (uint8_t *)&exexec_func, sizeof(exexec_func) });
 #ifndef NDEBUG
     last_exexec_ret = exexec_buf;
 #endif

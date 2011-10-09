@@ -33,7 +33,6 @@ int main()
 
   while (1) {
     sch();
-    exexec();
   }
 
   return 0;

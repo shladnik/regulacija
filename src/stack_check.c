@@ -1,6 +1,6 @@
 uintptr_t find_free(uintptr_t start, uintptr_t end)
 {
-#if 0 /* this is not needed as long as we don't use stack */
+#if 1 /* this is not needed as long as we don't use 'heap' */
   while (start < end) {
     if (*(uint8_t *)start == 0x55) {
       break;
@@ -45,8 +45,8 @@ __attribute__((used))
 uintptr_t stack_check()
 {
   /* this works as long as we don't use heap */
-  extern uint8_t _end;
-  uintptr_t start = (uintptr_t)&_end;
+  extern uint8_t __heap_start;
+  uintptr_t start = (uintptr_t)&__heap_start;
   uintptr_t end   = SP;
   return find_free(start, end);
 }

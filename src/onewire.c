@@ -240,11 +240,19 @@ bool onewire_match_rom(const rom_t rom)
   if (onewire_reset()) {
     return 1;
   } else {
-    if (rom.rom[0]/* || rom.rom[1] || ...*/) {
+    bool all = 1;
+    for (uint8_t i = 0; i < 8; i++) {
+      if (rom.rom[i]) {
+        all = 0;
+        break;
+      }
+    }
+
+    if (all) {
+      onewire_write8(0xcc);
+    } else {
       onewire_write8(0x55);
       onewire_write_l(rom.rom, 8);
-    } else {
-      onewire_write8(0xcc);
     }
     return 0;
   }

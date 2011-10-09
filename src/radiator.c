@@ -7,7 +7,6 @@ void radiator_loop()
   temp_t curr = read_1 + (read_1 - read_0) * 16;
 
   CONFIG_READ(goal, radiator_goal);
-  goal = 0;
 
   if (goal < 0) {
     temp_t t_collector = ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 7);

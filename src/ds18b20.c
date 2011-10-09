@@ -36,12 +36,11 @@ enum {
   ERR_NR,
 };
 
-DBG uint8_t ds18b20_err_cnt[DS18B20_NR][ERR_NR]; 
-DBG uint8_t ds18b20_max_rty[DS18B20_NR][2];
-
 void ds18b20_error(DS18B20 i, uint8_t errno)
 {
 #ifndef NDEBUG
+  i = MIN(DS18B20_NR, i);
+  DBG static uint8_t ds18b20_err_cnt[DS18B20_NR + 1][ERR_NR]; 
   if (ds18b20_err_cnt[i][errno] < (typeof(ds18b20_err_cnt[i][errno]))-1)
     ds18b20_err_cnt[i][errno]++;
 #else
@@ -58,6 +57,7 @@ void ds18b20_set_resolution(DS18B20 i, RESOLUTION r)
     if (ds18b20_tab[i].state > STATE_EEPROM_READY)
         ds18b20_tab[i].state = STATE_EEPROM_READY;
   }
+  ds18b20_init(i);
 }
 
 void ds18b20_reset(timer_t rst_time)
@@ -73,8 +73,12 @@ void ds18b20_reset(timer_t rst_time)
 static void ds18b20_match_rom(DS18B20 i)
 {
   rom_t romi;
-  for (uint8_t j = 0; j < sizeof(rom_t); j++)
-    romi.rom[j] = pgm_read_byte(&rom[i].rom[j]);
+  if (i < DS18B20_NR) {
+    for (uint8_t j = 0; j < sizeof(rom_t); j++)
+      romi.rom[j] = pgm_read_byte(&rom[i].rom[j]);
+  } else {
+    romi = (rom_t){ { 0 } };
+  }
   if (onewire_match_rom(romi)) ds18b20_error(i, ERR_NO_PRESENCE);
 }
 
@@ -217,27 +221,24 @@ temp_t ds18b20_read_temp(DS18B20 i)
 temp_t ds18b20_get_temp_bare(DS18B20 i, RESOLUTION r)
 {
   ds18b20_set_resolution(i, r);
-  ds18b20_init(i);
-
   ds18b20_match_rom(i);
   ds18b20_convert_t(i);
   return ds18b20_read_temp(i);
 }
 
-USED temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
+temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
 {
-  static volatile uint8_t try; // I had to add static (in a case when this func was called on one place only, i think)
-  try = 0;
-  static volatile timer_t rst_time;
-  rst_time = TIMER_MS(10);
-
+#if 0
+  /* static */ volatile uint8_t try; try = 0;
+  /* static */ volatile timer_t rst_time; rst_time = TIMER_MS(10);
   jmp_buf tmp_eh;
+
+  assert(ds18b20_err_handler == 0);
   ds18b20_err_handler = &tmp_eh;
   uint8_t errno = setjmp(tmp_eh);
   
-  temp_t val;
-
 #ifndef NDEBUG
+  DBG static uint8_t ds18b20_max_rty[DS18B20_NR][2];
   if (ds18b20_max_rty[i][0] < try) {
     ds18b20_max_rty[i][0] = try;
     ds18b20_max_rty[i][1] = errno;
@@ -247,19 +248,88 @@ USED temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
   (void)errno;
 #endif
 
+  temp_t val;
   if (try <= rty) {
     if (try >= 2) {
       ds18b20_reset(rst_time);
       rst_time <<= 1; // double time for next try
     }
-
     try++;
     val = ds18b20_get_temp_bare(i, r);
   } else {
-    val = INT16_MAX;
+    val = TEMP_ERR;
   }
   
   ds18b20_err_handler = 0;
 
   return val;
+#else
+  temp_t val = i;
+  ds18b20_get_temp_tab(1, r, rty, &val);
+  return val;
+#endif
 }
+
+USED void ds18b20_get_temp_tab(DS18B20 nr, RESOLUTION r, uint8_t rty, temp_t * tab)
+{
+  /* static */ volatile uint8_t try; try = 0;
+  /* static */ volatile timer_t rst_time; rst_time = TIMER_MS(10);
+  /* static */ volatile uint8_t cnt; cnt = nr;
+  jmp_buf tmp_eh;
+
+  assert(ds18b20_err_handler == 0);
+  ds18b20_err_handler = &tmp_eh;
+  uint8_t errno = setjmp(tmp_eh);
+  
+#ifndef NDEBUG
+  DBG static uint8_t ds18b20_max_rty[DS18B20_NR][2];
+  if (ds18b20_max_rty[*tab][0] < try) { // *tab index is a lie here for most types of errors
+    ds18b20_max_rty[*tab][0] = try;
+    ds18b20_max_rty[*tab][1] = errno;
+  }
+#else
+  (void)i;
+  (void)errno;
+#endif
+  
+  while (cnt) {
+    if (try <= rty) {
+      if (try >= 2) {
+        ds18b20_reset(rst_time);
+        rst_time <<= 1; // double time for next try
+      }
+      try++;
+    
+      for (uint8_t i = 0; i < cnt; i++) {
+        DS18B20 s = tab[i];
+        ds18b20_set_resolution(s, r);
+      }
+
+      if (cnt >= 2) {
+        for (/*DS18B20*/ uint8_t i = 0; i < DS18B20_NR; i++) {
+          if (ds18b20_tab[i].resolution > r) {
+            ds18b20_set_resolution(i, RESOLUTION_9);
+          }
+        }
+        ds18b20_match_rom(DS18B20_NR);
+      } else {
+        ds18b20_match_rom(tab[0]);
+      }
+      ds18b20_convert_t(tab[0]);
+
+      for (cnt = cnt; cnt > 0; cnt--) {
+        DS18B20 s = tab[0];
+        tab[0] = ds18b20_read_temp(s);
+        tab++;
+      }
+    } else {
+      tab[0] = TEMP_ERR;
+      tab++;
+      cnt--;
+      try = 0;
+    }
+  }
+  
+  ds18b20_err_handler = 0;
+}
+

@@ -1,0 +1,64 @@
+Virtual presence vs virtual existence 
+
+
+Virtual existence (on web):
+  - Second life & stuff
+  - Facebook & other accounts
+
+Virtual presence (in reality):
+  - not be there
+  - act there
+
+Control over internet:
+  - lights
+  - heating
+  - consumption (analyze & optimize)
+
+Smart houses:
+  - technology ready & on market
+  - not many examples in reality
+
+Industry:
+  - many other uses
+  - in fancy buildings & offices
+  - not many in working halls, where most of energy is consumed
+
+Problems:
+  - to expensive?
+  - more wires instead of less
+  - new buildings only
+  - no real need?
+    - energy efficiency increasingly popular
+    - laziness also
+
+Opportunities:
+  - simpler & scalable design
+  - small cheap units
+  - fit into existing buildings
+
+
+My current work:
+  - micro controller (C)
+  - visualization & configuration - PC (Python, CherryPy, HTML)
+  - strict separation (uC fully independent, PC or tablet - UI)
+  - HTML works everywhere - no platform specific apps
+
+The web part:
+  - CherryPy - HTTP Framework (+ xml.etree)
+  - integrated server
+  - easy authentication & SSL
+
+My problems:
+  Why I'm here:
+  - lack of time
+  - lack of discussion
+  - lack of practical experience
+
+Last words:
+  Often talented people devote to complex
+  and long term tasks. Or things, as I say,
+  which only help people to waste their time, e.g.
+  Facebook. Or things, that improve life of only few 
+  rich people. I think, there are many more valuable
+  opportunities, where humanity, or, if you prefer,
+  your income, might gain more.

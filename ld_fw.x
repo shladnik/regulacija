@@ -215,7 +215,7 @@ SECTIONS
   }  > data
   
    _end = . ;
-   PROVIDE (__heap_start = .) ;
+   __heap_start = . ;
 
   .eeprom  :
   {

@@ -1,10 +1,36 @@
 #!/usr/bin/python3
 
-import gum
-import xml.etree.ElementTree as etree
+import xml.etree.ElementTree
 import cherrypy
 import cherrypy.lib.auth_digest
 import inspect
+import time
+import sys
+import itertools
+import os
+import sys
+
+import gum
+import html_tools
+import packer
+
+el = xml.etree.ElementTree.Element
+
+
+if len(sys.argv) > 1:
+  baud = int(sys.argv[1])
+else:
+  baud = None
+
+if len(sys.argv) > 2:
+  meta = sys.argv[2]
+else:
+  meta = None
+
+gum.connect(baud, meta)
+
+
+
 
 def diagonal_flip(table):
   h = len(table)
@@ -15,19 +41,19 @@ def diagonal_flip(table):
 
 
 def build_table(data):
-  table = etree.Element('table')
+  table = el('table')
   table.attrib['border'] = '1'
   for rdata in data:
-    row = etree.Element('tr')
+    row = el('tr')
     for cdata in rdata:
-      cell = etree.Element('td')
+      cell = el('td')
       cell.text = str(cdata)
       row.append(cell)
     table.append(row)
   return table
 
 def build_sensor_err_tab():
-  slist = etree.parse("xml/xml.xml").getroot().find("ds18b20_list")
+  slist = xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("ds18b20_list")
   table = [ [ d.attrib['cname'] ] for d in slist.findall("ds18b20") ]
   cnt = gum.read_symbol('ds18b20_err_cnt', None)
   rty = gum.read_symbol('ds18b20_max_rty', None)
@@ -43,57 +69,81 @@ def build_sensor_err_tab():
 
 class Regulation(object):
   def skeleton(self, body):
-    html = etree.Element('html')
+    html = el('html')
     html.attrib['xmlns'] = 'http://www.w3.org/1999/xhtml'
-    head = etree.Element('head')
-    title = etree.Element('title')
+    head = el('head')
+    title = el('title')
     title.text = "Regulacija"
     head.append(title)
     html.append(head)
-    body.append(etree.Element('hr'))
-    link_tab = etree.Element('table')
+    body.append(el('hr'))
+    link_tab = el('table')
     caller = inspect.stack()[1][3]
-    tr = etree.Element('tr')
+    tr = el('tr')
     for i in dir(self):
       if not i == caller:
         attr = eval('self.' + i)
         if hasattr(attr, 'link') and hasattr(attr, 'exposed') and attr.exposed:
-          td = etree.Element('td')
-          a = etree.Element('a')
+          td = el('td')
+          a = el('a')
           a.attrib['href'] = attr.__name__
           a.text = attr.link
           td.append(a)
           tr.append(td)
     link_tab.append(tr)
     body.append(link_tab)
+    body.append(el('hr'))
+    
+    times = el('p')
+    times.text = ""
+    
+    daylist   = [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ]
+    monthlist = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ]
+    date = gum.read_symbol('date', None)
+    
+    times.text += "%s, %d %s %2d " % (daylist[date[3]], date[4] + 1, monthlist[date[5]], gum.tools.to_int(date[6:8])) # date
+    times.text += "%d:%02d:%02d " % (date[2], date[1], date[0])
+    
+    uptime = gum.read_symbol('uptime')
+    up_days   = uptime / (60 * 60 * 24)
+    uptime   %= (60 * 60 * 24)
+    up_hours  = uptime / (60 * 60)
+    uptime   %= (60 * 60)
+    up_mins  = uptime / 60 
+    uptime   %= 60
+
+    times.text += "(Uptime: %dd %dh %dm %ds)" % (up_days, up_hours, up_mins, uptime)
+    body.append(times)
+
     html.append(body)
     page = ""
     page += '<?xml version="1.0" encoding="UTF-8"?>'
     page += '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">'
-    page += etree.tostring(html)
+    page += xml.etree.ElementTree.tostring(html)
     return page
 
   def index(self):
-    body  = etree.Element('body')
-    table = etree.Element('table')
+    body  = el('body')
+    table = el('table')
 
     cnt = 0
     table = []
-    for d in etree.parse("xml/xml.xml").getroot().find("ds18b20_list").findall("ds18b20"):
-      table[len(table):] = [ [ d.attrib['cname'], gum.ds18b20_get_temp(cnt), d.text ] ]
+    temp_tab = gum.ds18b20_get_temp()
+    for d in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("ds18b20_list").findall("ds18b20"):
+      table[len(table):] = [ [ d.attrib['cname'], temp_tab[cnt], d.text ] ]
       cnt += 1
     body.append(build_table(table))
     
     cnt = 0
     table = []
-    for d in etree.parse("xml/xml.xml").getroot().find("valve_list").findall("valve"):
+    for d in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("valve_list").findall("valve"):
       table[len(table):] = [ [ d.attrib['cname'], gum.valve_state(cnt), d.text ] ]
       cnt += 1
     body.append(build_table(table))
 
     cnt = 0
     table = []
-    for d in etree.parse("xml/xml.xml").getroot().find("relay_list").findall("relay"):
+    for d in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("relay_list").findall("relay"):
       table[len(table):] = [ [ d.attrib['cname'], gum.relay_get(cnt), d.text ] ]
       cnt += 1
     body.append(build_table(table))
@@ -101,15 +151,15 @@ class Regulation(object):
     return self.skeleton(body)
 
   def config(self, name=None, value=None):
-    body = etree.Element("body")
+    body = el("body")
     
-    for s in etree.parse("xml/xml.xml").getroot().find("config_list").findall('*'):
-      form = etree.Element("form")
+    for s in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("config_list").findall('*'):
+      form = el("form")
       form.attrib['action'] = ""
       
-      p = etree.Element("p")
+      p = el("p")
       p.text = s.text.strip()
-      namefield = etree.Element('input')
+      namefield = el('input')
       namefield.attrib['type'] = 'hidden'
       namefield.attrib['name'] = 'name'
       namefield.attrib['value'] = s.tag
@@ -117,78 +167,99 @@ class Regulation(object):
       
       sign = s.attrib['format'][0] == 's'
       dot  = s.attrib['format'].find('.')
+      size = int(s.attrib['format'][sign:dot]) + int(s.attrib['format'][dot+1:])
       div = 1.0
       if dot >= 0:
         div = 2.0 ** int(s.attrib['format'][dot+1:])
 
-      textfield = etree.Element('input')
+      textfield = el('input')
       textfield.attrib['type'] = 'text'
       textfield.attrib['name'] = 'value'
       if name == s.tag:
         value = int(float(value) * div)
         gum.write_symbol(name, value)
-      print('%x' % gum.read_symbol(s.tag))
-      textfield.attrib['value'] = str(gum.read_symbol(s.tag) / div)
+      value = int(gum.read_symbol(s.tag))
+      print(hex(value), hex(1 << size))
+      if value >= (1 << size): value -= 2 << size
+      textfield.attrib['value'] = str(1.0*value / div)
       p.append(textfield)
 
-      submit = etree.Element('input')
+      submit = el('input')
       submit.attrib['type'] = 'submit'
       p.append(submit)
       form.append(p)
 
       body.append(form)
+    
+    # sync time button
+    form = el("form")
+    form.attrib['action'] = ""
+    
+    p = el("p")
+
+    p.text = time.ctime()
+    namefield = el('input')
+    namefield.attrib['type'] = 'hidden'
+    namefield.attrib['name'] = 'name'
+    namefield.attrib['value'] = 'set_time'
+    p.append(namefield)
+    
+    valfield = el('input')
+    valfield.attrib['type'] = 'hidden'
+    valfield.attrib['name'] = 'value'
+    valfield.attrib['value'] = ''
+    p.append(valfield)
+    
+    if (name == namefield.attrib['value']):
+      if value: gum.set_time(value)
+      else:     gum.set_time()
+
+
+    submit = el('input')
+    submit.attrib['type'] = 'submit'
+    submit.attrib['value'] = 'Sinhroniziraj cas'
+    p.append(submit)
+    form.append(p)
+
+    body.append(form)
 
     return self.skeleton(body)
     
   
-  def devel(self, name=None, val=None, arg0="", arg1="", arg2="", arg3="", *args):
-    body = etree.Element('body')
-   
-    form   = etree.Element("form")
+  def devel(self, ram_symbol= None,
+                  ram_val   = None, exexec_symbol= None,
+                                    exexec_arg0  = None,
+                                    exexec_arg1  = None,
+                                    exexec_arg2  = None,
+                                    exexec_arg3  = None):
+    body = el('body')
+  
+    #
+    # RAM Symbols
+    #
+    form   = el("form")
     form.attrib['action'] = ""
+    fieldset = el("fieldset")
 
-    fieldset = etree.Element("fieldset")
-    select = etree.Element("select")
-    keys = list(gum.symbols.keys())
-    keys.sort()
-    for s in keys:
-      if gum.symbols[s]['section'] != ".text" and \
-         gum.symbols[s]['size'] > 0:
-        opt = etree.Element("option")
-        opt.attrib['value'] = s
-        opt.text = s
-        if name == s: opt.attrib['selected'] = 'selected'
-        select.append(opt)
-    select.attrib['name'] = 'name'
-    select.attrib['onchange'] = 'this.form.val.value=""; this.form.submit();'
-    fieldset.append(select)
+    ram_list = filter(lambda x: gum.meta['symbols'][x]['size'] > 0, gum.meta['symbols'].keys())
+    ram_list = filter(lambda x: gum.meta['symbols'][x]['mem'] == "ram", ram_list)
+    ram_list = list(ram_list)
+    ram_list.sort()
     
-    textfield = etree.Element('input')
-    textfield.attrib['type'] = 'text'
-    textfield.attrib['name'] = 'val'
-   
-    if name:
-      if name[0:2] == '0x':
-        adr = int(name[2:], 0x10)
-        if val:
-          if val[0:2] == '0x':
-            val = int(val[2:], 0x10)
-          else:
-            val = int(val)
-          print(adr, val)
-          gum.rs232.access(1, adr, bytearray([val]))
-        textfield.attrib['value'] = hex(gum.rs232.access(0, adr, bytearray(1))[0])
-      elif gum.symbols[name]['section'] != ".text" and \
-           gum.symbols[name]['size'] > 0:
-        if val:
-          if val[0:2] == '0x':
-            val = int(val[2:], 0x10)
-          else:
-            val = int(val)
-          gum.write_symbol(name, val)
-        textfield.attrib['value'] = hex(gum.read_symbol(name))
+    fieldset.append(html_tools.select(ram_list, "ram_symbol", selected = ram_symbol,
+                                      onchange = 'this.form.' + 'ram_val' + '.value=""; this.form.submit();'))
 
-    fieldset.append(textfield)
+    val = ""
+    if ram_symbol in ram_list:
+      if ram_val:
+        if ram_val[0:2] == '0x':
+          ram_val = int(ram_val[2:], 0x10)
+        else:
+          ram_val = int(ram_val)
+        gum.write_symbol(ram_symbol, ram_val)
+      val = hex(gum.read_symbol(ram_symbol))
+
+    fieldset.append(el('input', type = 'text', name = 'ram_val', value = val))
 
     form.append(fieldset)
     body.append(form)
@@ -196,157 +267,152 @@ class Regulation(object):
     #
     # exexec
     #
-    form = etree.Element("form")
-    form.attrib['action'] = ""
+    exexec_list = filter(lambda x: gum.meta['symbols'][x]['mem'] == 'flash', gum.meta['symbols'])
+    exexec_list = filter(lambda x: gum.meta['symbols'][x]['size'], exexec_list)
+    exexec_list = filter(lambda x: gum.meta['symbols'][x]['section'] == '.text' or gum.meta['symbols'][x]['section'] == '.flash_write', exexec_list)
+    exexec_list = list(exexec_list)
+    exexec_list.sort()
 
-    fieldset = etree.Element("fieldset")
-    select = etree.Element("select")
-    keys = list(gum.symbols.keys())
-    keys.sort()
-    for s in keys:
-      if gum.symbols[s]['section'] == ".text" and \
-         gum.symbols[s]['size'] > 0:
-        opt = etree.Element("option")
-        opt.attrib['value'] = s
-        opt.text = s
-        if name == s: opt.attrib['selected'] = 'selected'
-        select.append(opt)
-    select.attrib['name'] = 'name'
-    select.attrib['onchange'] = '''
-    this.form.arg0.value="";
-    this.form.arg1.value="";
-    this.form.arg2.value="";
-    this.form.arg3.value="";
-    '''
-    fieldset.append(select)
+    form = el("form", action = "")
+    fieldset = el("fieldset")
     
-    textfield = etree.Element('input')
-    textfield.attrib['type'] = 'text'
-    textfield.attrib['name'] = 'arg0'
-    textfield.attrib['size'] = '4'
-    if arg0 == "":
-      arg0 = 0
-    elif arg0[0:2] == '0x':
-      arg0 = int(arg0[2:], 0x10)
-    else:
-      arg0 = int(arg0)
-    textfield.attrib['value'] = str(arg0)
-    fieldset.append(textfield)
-    textfield = etree.Element('input')
-    textfield.attrib['type'] = 'text'
-    textfield.attrib['name'] = 'arg1'
-    textfield.attrib['size'] = '4'
-    if arg1 == "":
-      arg1 = 0
-    elif arg1[0:2] == '0x':
-      arg1 = int(arg1[2:], 0x10)
-    else:
-      arg1 = int(arg1)
-    textfield.attrib['value'] = str(arg1)
-    fieldset.append(textfield)
-    textfield = etree.Element('input')
-    textfield.attrib['type'] = 'text'
-    textfield.attrib['name'] = 'arg2'
-    textfield.attrib['size'] = '4'
-    if arg2 == "":
-      arg2 = 0
-    elif arg2[0:2] == '0x':
-      arg2 = int(arg2[2:], 0x10)
-    else:
-      arg2 = int(arg2)
-    textfield.attrib['value'] = str(arg2)
-    fieldset.append(textfield)
-    textfield = etree.Element('input')
-    textfield.attrib['type'] = 'text'
-    textfield.attrib['name'] = 'arg3'
-    textfield.attrib['size'] = '4'
-    if arg3 == "":
-      arg3 = 0
-    elif arg3[0:2] == '0x':
-      arg3 = int(arg3[2:], 0x10)
-    else:
-      arg3 = int(arg3)
-    textfield.attrib['value'] = str(arg3)
-    fieldset.append(textfield)
+    argn = list(map(lambda x: 'exexec_arg' + str(x), range(4)))
+    jscript = ''.join(map(lambda x: 'this.form.' + x + '.value="";', argn))
+    fieldset.append(html_tools.select(exexec_list, "exexec_symbol", selected = exexec_symbol, onchange = jscript))
 
-    if name and not name[0:2] == '0x' and gum.symbols[name]['section'] == ".text":
-      textfield = etree.Element('input')
-      textfield.attrib['type'] = 'text'
-      textfield.attrib['name'] = 'return'
-      textfield.attrib['disabled'] = 'disabled'
-      ret_val = gum.exexec(name, [arg0, arg1, arg2, arg3])
-      textfield.attrib['value'] = ""
-      for i in ret_val:
-        textfield.attrib['value'] += "%4x " % i
-      fieldset.append(textfield)
+    def make_val(arg):
+      if not arg:            arg = 0
+      elif arg[0:2] == '0x': arg = int(arg[2:], 0x10)
+      else:                  arg = int(arg)
+      return str(arg)
     
-    submit = etree.Element('input')
+    for a in argn: fieldset.append(el('input', type = 'text', size = str(4), name = a, value = make_val(eval(a))))
+    
+    if exexec_symbol in exexec_list:
+      for i in gum.exexec(exexec_symbol, list(map(eval, argn))):
+        fieldset.append(el("input", type = 'text', size = str(4), value = hex(i), disabled="disabled"))
+
+    submit = el('input')
     submit.attrib['type'] = 'submit'
     fieldset.append(submit)
 
     form.append(fieldset)
     body.append(form)
     
-    tr = etree.Element('tr')
+    p = el('p')
+    p.text = "Stack status: " + str(gum.exexec('stack_check')[0])
+    body.append(p)
+    
+    tr = el('tr')
     
     #
     # Console
     #
     console = gum.readcon()
-    if len(console):
-      td = etree.Element('td')
-      textarea = etree.Element('textarea')
-      textarea.attrib['cols'] = '40'
-      textarea.attrib['rows'] = '20'
-      textarea.attrib['disabled'] = 'disabled'
+    if len(console) :
+      td = el('td')
+      textarea = el('textarea', cols = '40', rows = '20', disabled = 'disabled')
       textarea.text = console
       td.append(textarea)
       tr.append(td)
-   
+    
     #
-    # dbg_* vars
+    # .dbg vars
     #
-    td = etree.Element('td')
-    dbg_tab = etree.Element('table')
-    for s in sorted(gum.symbols):
-      if gum.symbols[s]['section'] == ".dbg" and \
-         gum.symbols[s]['size'] > 0 and \
-         s != 'bla' and \
-         s != 'ds18b20_err_cnt' and \
-         s != 'ds18b20_max_rty' and \
-         s[0:9] != 'print_buf':
-        dbg = etree.Element("tr")
-        dbgn = etree.Element("td")
-        dbgn.text = s
-        dbg.append(dbgn)
-        dbgv = etree.Element("td")
-        dbgv.text = hex(gum.read_symbol(s))
-        dbg.append(dbgv)
-        dbg_tab.append(dbg)
-    td.append(dbg_tab)
-
+    dbg_list = filter(lambda x: gum.meta['symbols'][x]['section'] == ".dbg", gum.meta['symbols'])
+    dbg_list = filter(lambda x: gum.meta['symbols'][x]['size'], dbg_list)
+    dbg_list = filter(lambda x: x != 'ds18b20_err_cnt', dbg_list)
+    dbg_list = filter(lambda x: x != 'ds18b20_max_rty', dbg_list)
+    dbg_list = filter(lambda x: x[0:9] != 'print_buf', dbg_list)
+    dbg_list = list(dbg_list)
+    dbg_list.sort()
+    
+    td = el('td')
+    td.append(html_tools.table(list(map(lambda x: [ x, hex(gum.read_symbol(x)) ], dbg_list))))
+    tr.append(td)
+    
+    # .dbgcp
+    dbgcp_list = filter(lambda x: gum.meta['symbols'][x]['mem'] == "ram", gum.meta['symbols'])
+    dbgcp_list = filter(lambda x: gum.meta['symbols']['__dbg2cp_start']['adr'] <= gum.meta['symbols'][x]['adr'] < gum.meta['symbols']['__dbg2cp_end']['adr'], dbgcp_list)
+    dbgcp_list = filter(lambda x: gum.meta['symbols'][x]['size'], dbgcp_list)
+    dbgcp_list = list(dbgcp_list)
+    dbgcp_list.sort()
+    td = el('td')
+    td.append(html_tools.table(list(map(lambda x: [ x, hex(gum.read_symbol_dbgcp(x)) ], dbgcp_list))))
     tr.append(td)
 
-    table = etree.Element('table')
+    table = el('table')
     table.append(tr)
    
     body.append(table)
     body.append(build_sensor_err_tab())
 
-    #bla = gum.read_symbol('bla', None);
-    #table = []
-    #for i in range(0, len(bla), 0x80):
-    #  table[len(table):] = [ bla[i:i+0x80] ]
-    #body.append(build_table(table))
-
-    #bla = gum.read_symbol('timer_now_log', None);
-    #table = []
-    #for i in range(0, len(bla), 0x4):
-    #  table[len(table):] = [ [ gum.to_int(bla[i:i+0x4]) ] ]
-    #body.append(build_table(table))
-    
     return self.skeleton(body)
 
+  def flash(self, fw_bin = None, bootloader_bin = None, update = None):
+    body = el('body')
+
+    form = el("form")
+    form.text = "Firmware:"
+    form.attrib['method'] = 'post'
+    form.attrib['enctype'] = 'multipart/form-data'
+    file_input = el("input")
+    file_input.attrib['type'] = 'file'
+    file_input.attrib['name'] = 'fw_bin'
+    form.append(file_input)
+    submit = el("input")
+    submit.attrib['type'] = 'submit'
+    form.append(submit)
+    body.append(form)
+    
+    if fw_bin:
+      body.text = "Flashed fw with " + fw_bin.filename
+      gum.flash_fw(fw_bin.file)
+    
+    form = el("form")
+    form.text = "Bootloader:"
+    form.attrib['method'] = 'post'
+    form.attrib['enctype'] = 'multipart/form-data'
+    file_input = el("input")
+    file_input.attrib['type'] = 'file'
+    file_input.attrib['name'] = 'bootloader_bin'
+    form.append(file_input)
+    submit = el("input")
+    submit.attrib['type'] = 'submit'
+    form.append(submit)
+    body.append(form)
+    
+    if bootloader_bin:
+      body.text = "Flashed bootloader with " + bootloader_bin.filename
+      gum.flash_bootloader(bootloader_bin.file)
+
+    form = el("form")
+    form.text = "Update:"
+    form.attrib['method'] = 'post'
+    form.attrib['enctype'] = 'multipart/form-data'
+    file_input = el("input")
+    file_input.attrib['type'] = 'file'
+    file_input.attrib['name'] = 'update'
+    form.append(file_input)
+    submit = el("input")
+    submit.attrib['type'] = 'submit'
+    form.append(submit)
+    body.append(form)
+    
+    if update:
+      body.text = "Applied " + update.filename
+      sf = open(update.filename, mode='wb')
+      sf.write(update.file.read())
+      sf.close()
+
+      packer.update(update.filename)
+      os.execv(sys.argv[0], sys.argv)
+
+
+    #return self.skeleton(body)
+    return xml.etree.ElementTree.tostring(body)
+
+    
   index.__dict__ = {
     'exposed' : True,
     'link'    : "Prva stran",
@@ -360,6 +426,11 @@ class Regulation(object):
   devel.__dict__ = {
     'exposed' : True,
     'link'    : "Razvoj",
+  }
+
+  flash.__dict__ = {
+    'exposed' : True,
+    'link'    : "Flash",
   }
 
 
@@ -385,7 +456,7 @@ class Regulation(object):
 
 cherrypy.quickstart(Regulation(), '', {
   'global' : {
-    #'engine.autoreload_on'      : False,
+    'engine.autoreload_on'      : False,
     #'server.socket_host'        : 'stefuc.homeip.net',
     'server.socket_host'        : '0.0.0.0',
     'server.socket_port'        : 8000,
@@ -402,5 +473,4 @@ cherrypy.quickstart(Regulation(), '', {
     'tools.auth_digest.key'     : 'a565c27146791cfb',
   },
 })
-
 
