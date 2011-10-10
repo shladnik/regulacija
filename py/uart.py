@@ -14,7 +14,7 @@ def get(timeout = 0.1): #1000 * 10.0/uart.baudrate):
   r = r[0]
   return r
 
-def put(b, delay = 15 * 10.0/uart.baudrate):
+def put(b, delay = 0.0001):
   if type(b) != int:
     raise Exception("Cannot send more then a char at once.")
   #print("T:", hex(b))

@@ -11,24 +11,22 @@ import os
 import sys
 
 import gum
+import tools
 import html_tools
 import packer
 
 el = xml.etree.ElementTree.Element
 
 
-if len(sys.argv) > 1:
-  baud = int(sys.argv[1])
-else:
-  baud = None
-
-if len(sys.argv) > 2:
-  meta = sys.argv[2]
-else:
-  meta = None
-
-gum.connect(baud, meta)
-
+#if len(sys.argv) > 1:
+#  baud = int(sys.argv[1])
+#else:
+#  baud = None
+#
+#if len(sys.argv) > 2:
+#  meta = sys.argv[2]
+#else:
+#  meta = None
 
 
 
@@ -52,11 +50,11 @@ def build_table(data):
     table.append(row)
   return table
 
-def build_sensor_err_tab():
+def build_sensor_err_tab(gumi):
   slist = xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("ds18b20_list")
   table = [ [ d.attrib['cname'] ] for d in slist.findall("ds18b20") ]
-  cnt = gum.read_symbol('ds18b20_err_cnt', None)
-  rty = gum.read_symbol('ds18b20_max_rty', None)
+  cnt = gumi.read_symbol('ds18b20_err_cnt', None)
+  rty = gumi.read_symbol('ds18b20_max_rty', None)
   err_nr = int(len(cnt) / len(table))
   for i in range(len(table)):
     table[i] += cnt[i*err_nr:(i+1) * err_nr] +\
@@ -68,7 +66,7 @@ def build_sensor_err_tab():
   
 
 class Regulation(object):
-  def skeleton(self, body):
+  def skeleton(self, body, gumi = None):
     html = el('html')
     html.attrib['xmlns'] = 'http://www.w3.org/1999/xhtml'
     head = el('head')
@@ -93,27 +91,28 @@ class Regulation(object):
     link_tab.append(tr)
     body.append(link_tab)
     body.append(el('hr'))
-    
-    times = el('p')
-    times.text = ""
-    
-    daylist   = [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ]
-    monthlist = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ]
-    date = gum.read_symbol('date', None)
-    
-    times.text += "%s, %d %s %2d " % (daylist[date[3]], date[4] + 1, monthlist[date[5]], gum.tools.to_int(date[6:8])) # date
-    times.text += "%d:%02d:%02d " % (date[2], date[1], date[0])
-    
-    uptime = gum.read_symbol('uptime')
-    up_days   = uptime / (60 * 60 * 24)
-    uptime   %= (60 * 60 * 24)
-    up_hours  = uptime / (60 * 60)
-    uptime   %= (60 * 60)
-    up_mins  = uptime / 60 
-    uptime   %= 60
+   
+    if gumi:
+      times = el('p')
+      times.text = ""
+      
+      daylist   = [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ]
+      monthlist = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ]
+      date = gumi.read_symbol('date', None)
+      
+      times.text += "%s, %d %s %2d " % (daylist[date[3]], date[4] + 1, monthlist[date[5]], tools.to_int(date[6:8])) # date
+      times.text += "%d:%02d:%02d " % (date[2], date[1], date[0])
+      
+      uptime = gumi.read_symbol('uptime')
+      up_days   = uptime / (60 * 60 * 24)
+      uptime   %= (60 * 60 * 24)
+      up_hours  = uptime / (60 * 60)
+      uptime   %= (60 * 60)
+      up_mins  = uptime / 60 
+      uptime   %= 60
 
-    times.text += "(Uptime: %dd %dh %dm %ds)" % (up_days, up_hours, up_mins, uptime)
-    body.append(times)
+      times.text += "(Uptime: %dd %dh %dm %ds)" % (up_days, up_hours, up_mins, uptime)
+      body.append(times)
 
     html.append(body)
     page = ""
@@ -123,12 +122,13 @@ class Regulation(object):
     return page
 
   def index(self):
+    gumi = gum.Gum()
     body  = el('body')
     table = el('table')
 
     cnt = 0
     table = []
-    temp_tab = gum.ds18b20_get_temp()
+    temp_tab = gumi.ds18b20_get_temp()
     for d in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("ds18b20_list").findall("ds18b20"):
       table[len(table):] = [ [ d.attrib['cname'], temp_tab[cnt], d.text ] ]
       cnt += 1
@@ -137,20 +137,21 @@ class Regulation(object):
     cnt = 0
     table = []
     for d in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("valve_list").findall("valve"):
-      table[len(table):] = [ [ d.attrib['cname'], gum.valve_state(cnt), d.text ] ]
+      table[len(table):] = [ [ d.attrib['cname'], gumi.valve_state(cnt), d.text ] ]
       cnt += 1
     body.append(build_table(table))
 
     cnt = 0
     table = []
     for d in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("relay_list").findall("relay"):
-      table[len(table):] = [ [ d.attrib['cname'], gum.relay_get(cnt), d.text ] ]
+      table[len(table):] = [ [ d.attrib['cname'], gumi.relay_get(cnt), d.text ] ]
       cnt += 1
     body.append(build_table(table))
 
-    return self.skeleton(body)
+    return self.skeleton(body, gumi)
 
   def config(self, name=None, value=None):
+    gumi = gum.Gum()
     body = el("body")
     
     for s in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("config_list").findall('*'):
@@ -177,8 +178,8 @@ class Regulation(object):
       textfield.attrib['name'] = 'value'
       if name == s.tag:
         value = int(float(value) * div)
-        gum.write_symbol(name, value)
-      value = int(gum.read_symbol(s.tag))
+        gumi.write_symbol(name, value)
+      value = int(gumi.read_symbol(s.tag))
       print(hex(value), hex(1 << size))
       if value >= (1 << size): value -= 2 << size
       textfield.attrib['value'] = str(1.0*value / div)
@@ -211,8 +212,8 @@ class Regulation(object):
     p.append(valfield)
     
     if (name == namefield.attrib['value']):
-      if value: gum.set_time(value)
-      else:     gum.set_time()
+      if value: gumi.set_time(value)
+      else:     gumi.set_time()
 
 
     submit = el('input')
@@ -223,7 +224,7 @@ class Regulation(object):
 
     body.append(form)
 
-    return self.skeleton(body)
+    return self.skeleton(body, gumi)
     
   
   def devel(self, ram_symbol= None,
@@ -232,6 +233,7 @@ class Regulation(object):
                                     exexec_arg1  = None,
                                     exexec_arg2  = None,
                                     exexec_arg3  = None):
+    gumi = gum.Gum()
     body = el('body')
   
     #
@@ -241,8 +243,8 @@ class Regulation(object):
     form.attrib['action'] = ""
     fieldset = el("fieldset")
 
-    ram_list = filter(lambda x: gum.meta['symbols'][x]['size'] > 0, gum.meta['symbols'].keys())
-    ram_list = filter(lambda x: gum.meta['symbols'][x]['mem'] == "ram", ram_list)
+    ram_list = filter(lambda x: gumi.meta['symbols'][x]['size'] > 0, gumi.meta['symbols'].keys())
+    ram_list = filter(lambda x: gumi.meta['symbols'][x]['mem'] == "ram", ram_list)
     ram_list = list(ram_list)
     ram_list.sort()
     
@@ -256,8 +258,8 @@ class Regulation(object):
           ram_val = int(ram_val[2:], 0x10)
         else:
           ram_val = int(ram_val)
-        gum.write_symbol(ram_symbol, ram_val)
-      val = hex(gum.read_symbol(ram_symbol))
+        gumi.write_symbol(ram_symbol, ram_val)
+      val = hex(gumi.read_symbol(ram_symbol))
 
     fieldset.append(el('input', type = 'text', name = 'ram_val', value = val))
 
@@ -267,9 +269,9 @@ class Regulation(object):
     #
     # exexec
     #
-    exexec_list = filter(lambda x: gum.meta['symbols'][x]['mem'] == 'flash', gum.meta['symbols'])
-    exexec_list = filter(lambda x: gum.meta['symbols'][x]['size'], exexec_list)
-    exexec_list = filter(lambda x: gum.meta['symbols'][x]['section'] == '.text' or gum.meta['symbols'][x]['section'] == '.flash_write', exexec_list)
+    exexec_list = filter(lambda x: gumi.meta['symbols'][x]['mem'] == 'flash', gumi.meta['symbols'])
+    exexec_list = filter(lambda x: gumi.meta['symbols'][x]['size'], exexec_list)
+    exexec_list = filter(lambda x: gumi.meta['symbols'][x]['section'] == '.text' or gumi.meta['symbols'][x]['section'] == '.flash_write', exexec_list)
     exexec_list = list(exexec_list)
     exexec_list.sort()
 
@@ -289,7 +291,7 @@ class Regulation(object):
     for a in argn: fieldset.append(el('input', type = 'text', size = str(4), name = a, value = make_val(eval(a))))
     
     if exexec_symbol in exexec_list:
-      for i in gum.exexec(exexec_symbol, list(map(eval, argn))):
+      for i in gumi.exexec(exexec_symbol, list(map(eval, argn))):
         fieldset.append(el("input", type = 'text', size = str(4), value = hex(i), disabled="disabled"))
 
     submit = el('input')
@@ -300,7 +302,7 @@ class Regulation(object):
     body.append(form)
     
     p = el('p')
-    p.text = "Stack status: " + str(gum.exexec('stack_check')[0])
+    p.text = "Stack status: " + str(gumi.exexec('stack_check')[0])
     body.append(p)
     
     tr = el('tr')
@@ -308,7 +310,7 @@ class Regulation(object):
     #
     # Console
     #
-    console = gum.readcon()
+    console = gumi.readcon()
     if len(console) :
       td = el('td')
       textarea = el('textarea', cols = '40', rows = '20', disabled = 'disabled')
@@ -319,8 +321,8 @@ class Regulation(object):
     #
     # .dbg vars
     #
-    dbg_list = filter(lambda x: gum.meta['symbols'][x]['section'] == ".dbg", gum.meta['symbols'])
-    dbg_list = filter(lambda x: gum.meta['symbols'][x]['size'], dbg_list)
+    dbg_list = filter(lambda x: gumi.meta['symbols'][x]['section'] == ".dbg", gumi.meta['symbols'])
+    dbg_list = filter(lambda x: gumi.meta['symbols'][x]['size'], dbg_list)
     dbg_list = filter(lambda x: x != 'ds18b20_err_cnt', dbg_list)
     dbg_list = filter(lambda x: x != 'ds18b20_max_rty', dbg_list)
     dbg_list = filter(lambda x: x[0:9] != 'print_buf', dbg_list)
@@ -328,26 +330,26 @@ class Regulation(object):
     dbg_list.sort()
     
     td = el('td')
-    td.append(html_tools.table(list(map(lambda x: [ x, hex(gum.read_symbol(x)) ], dbg_list))))
+    td.append(html_tools.table(list(map(lambda x: [ x, hex(gumi.read_symbol(x)) ], dbg_list))))
     tr.append(td)
     
     # .dbgcp
-    dbgcp_list = filter(lambda x: gum.meta['symbols'][x]['mem'] == "ram", gum.meta['symbols'])
-    dbgcp_list = filter(lambda x: gum.meta['symbols']['__dbg2cp_start']['adr'] <= gum.meta['symbols'][x]['adr'] < gum.meta['symbols']['__dbg2cp_end']['adr'], dbgcp_list)
-    dbgcp_list = filter(lambda x: gum.meta['symbols'][x]['size'], dbgcp_list)
+    dbgcp_list = filter(lambda x: gumi.meta['symbols'][x]['mem'] == "ram", gumi.meta['symbols'])
+    dbgcp_list = filter(lambda x: gumi.meta['symbols']['__dbg2cp_start']['adr'] <= gumi.meta['symbols'][x]['adr'] < gumi.meta['symbols']['__dbg2cp_end']['adr'], dbgcp_list)
+    dbgcp_list = filter(lambda x: gumi.meta['symbols'][x]['size'], dbgcp_list)
     dbgcp_list = list(dbgcp_list)
     dbgcp_list.sort()
     td = el('td')
-    td.append(html_tools.table(list(map(lambda x: [ x, hex(gum.read_symbol_dbgcp(x)) ], dbgcp_list))))
+    td.append(html_tools.table(list(map(lambda x: [ x, hex(gumi.read_symbol_dbgcp(x)) ], dbgcp_list))))
     tr.append(td)
 
     table = el('table')
     table.append(tr)
    
     body.append(table)
-    body.append(build_sensor_err_tab())
+    body.append(build_sensor_err_tab(gumi))
 
-    return self.skeleton(body)
+    return self.skeleton(body, gumi)
 
   def flash(self, fw_bin = None, bootloader_bin = None, update = None):
     body = el('body')
@@ -367,7 +369,7 @@ class Regulation(object):
     
     if fw_bin:
       body.text = "Flashed fw with " + fw_bin.filename
-      gum.flash_fw(fw_bin.file)
+      gumi.flash_fw(fw_bin.file)
     
     form = el("form")
     form.text = "Bootloader:"
@@ -384,7 +386,7 @@ class Regulation(object):
     
     if bootloader_bin:
       body.text = "Flashed bootloader with " + bootloader_bin.filename
-      gum.flash_bootloader(bootloader_bin.file)
+      gumi.flash_bootloader(bootloader_bin.file)
 
     form = el("form")
     form.text = "Update:"
@@ -409,8 +411,7 @@ class Regulation(object):
       os.execv(sys.argv[0], sys.argv)
 
 
-    #return self.skeleton(body)
-    return xml.etree.ElementTree.tostring(body)
+    return self.skeleton(body)
 
     
   index.__dict__ = {
