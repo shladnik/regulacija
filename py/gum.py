@@ -15,141 +15,105 @@ class Gum():
   icnt_lock = threading.Lock()
 
   def __init__(self, port = None, rate = None, meta = None, sw = None):
-    start = time.clock()
     with Gum.icnt_lock:
       if not Gum.icnt:
-        try:
-          unpickled = pickle.load(open("gum.cache", 'rb'))
-        except: pass
-        else:
-          if not port: port = unpickled['port']
-          if not rate: rate = unpickled['rate']
-          if not meta: meta = unpickled['meta']
-
-        ports = tuple(map(lambda x: '/dev/ttyUSB' + str(x), range(4)))
-        if port:
-          ports = filter(lambda x: x == port, ports)
-          ports = tuple([port]) + tuple(ports)
-        
-        rates = ( 230400, 115200, 9600 )
-        rates = rates + tuple(reversed(sorted(tuple(set(uart.uart.BAUDRATES) - set(rates)))))
-        if rate:
-          rates = filter(lambda x: x == rate, rates)
-          rates = tuple([rate]) + tuple(rates)
-
-        try:
-          for uart.uart.port in ports:
-            build = False
-            try:
-              for uart.uart.baudrate in rates:
-                print("Trying", uart.uart.port, uart.uart.baudrate, "... ")
-                uart.uart.open()
-                try:
-                  build = uart.access(0, 0x60, bytearray(8))
-                  break;
-                except:
-                  if uart.uart.baudrate == rates[-1]: raise
-                  else:                               continue
-            except:
-              if uart.uart.port == ports[-1]: raise
-              else:                           continue
-            if build: break
-        except:
-          print("Failed to autoconnect. Defaulting to the first listed ...")
-          uart.uart.port     = ports[0]
-          uart.uart.baudrate = rates[0]
- 
-        print("Device:", uart.uart.port, "- rate:", uart.uart.baudrate)
-        
-        if port and port != uart.uart.port:     print("Port changed (", port, "->", uart.uart.port    , ")")
-        if rate and rate != uart.uart.baudrate: print("Rate changed (", rate, "->", uart.uart.baudrate, ")")
-        
-        #
-        # Meta
-        #
-        def extract_build(meta):
-          return bytearray([
-            meta['macros']["BUILD_SEC"    ],
-            meta['macros']["BUILD_MIN"    ],
-            meta['macros']["BUILD_HOUR"   ],
-            meta['macros']["BUILD_WEEKDAY"],
-            meta['macros']["BUILD_DAY"    ],
-            meta['macros']["BUILD_MONTH"  ]] +
-            list(tools.to_bytes(meta['macros']["BUILD_YEAR"   ], 2)))
- 
-        sws = filter(lambda x: x[0:6] == "update" and x[-8:] == ".tar.bz2", os.listdir("."))
-        sws = sorted(sws, key=lambda x: os.stat(x).st_mtime)
-        if sw:
-          sws = filter(lambda x: x == sw, sws)
-          sws = tuple([sw]) + tuple(sws)
-       
-        def sw2meta(sw):
-          pickled_meta = packer.getfile(sw, 'meta')
-          if pickled_meta: return pickle.load(pickled_meta)
-          else           : return None
-        
-        meta_latest  = None
-        build_latest = bytearray(8)
-        metafs = tuple([lambda: meta]) + tuple(map(lambda x: lambda: sw2meta(x), sws))
-        for metaf in metafs:
-          meta = metaf()
-          if meta:
-            build_curr = extract_build(meta)
-            if meta and build_curr == build:
-              break
-            elif bytearray(reversed(build_curr)) > bytearray(reversed(build_latest)):
-              meta_latest  = meta
-              build_latest = build_curr
-          if metaf == metafs[-1]:
-            if not meta_latest: raise Exception("No meta found")
-            print("Failed to find appropriate meta (", build, "). Failing back to latest found (", build_latest, ").")
-            meta  = meta_latest
-            build = build_latest
-
-        print("Meta build:", tools.mcutime(build))
-          
-
-#
-#
-#
-# 
-#        if sw or not meta or extract_build(meta) != build:
-#          sws = filter(lambda x: x[0:6] == "update" and x[-8:] == ".tar.bz2", os.listdir("."))
-#          sws = sorted(sws, key=lambda x: os.stat(x).st_mtime)
-#          if sw:
-#            sws = filter(lambda x: x == sw, sws)
-#            sws = tuple([sw]) + tuple(sws)
-#          
-#          latest_sw    = sws[0]
-#          latest_meta  = None
-#          latest_build = bytearray(8)
-# 
-#          for s in sws:
-#            pickled_meta = packer.getfile(s, 'meta')
-#            if pickled_meta:
-#              meta = pickle.load(pickled_meta)
-#              this_build = extract_build(meta)
-#              if bytearray(reversed(this_build)) > bytearray(reversed(latest_build)):
-#                latest_sw    = s
-#                latest_meta  = meta
-#                latest_build = this_build
-#              if this_build == build: break
-#            if s == sws[-1]:
-#              if latest_meta:
-#                print("Failed to find appropriate meta (", build, "). Failing back to latest found.")
-#                meta = latest_meta
-#                s    = latest_sw
-#              else:
-#                raise Exception("No meta found")
-# 
-#        print("Meta:", tools.mcutime(extract_build(meta)))
-#        if sw and sw != s: print("SW changed (", sw, "->", s, ")")
-#        
-        uart.max_write_len = meta['symbols']['rx_buf']['size']
-        Gum.meta = meta
+        self.connect(port = port, rate = rate, meta = meta, sw = sw)
       self.meta = Gum.meta
       Gum.icnt += 1
 
+  def connect(self, port = None, rate = None, meta = None, sw = None):
+    try:
+      unpickled = pickle.load(open("gum.cache", 'rb'))
+    except: pass
+    else:
+      if not port: port = unpickled['port']
+      if not rate: rate = unpickled['rate']
+      if not meta: meta = unpickled['meta']
+
+    ports = tuple(map(lambda x: '/dev/ttyUSB' + str(x), range(4)))
+    if port:
+      ports = filter(lambda x: x != port, ports)
+      ports = tuple([port]) + tuple(ports)
+    
+    rates = ( 230400, 115200, 9600 )
+    rates = rates + tuple(reversed(sorted(tuple(set(uart.uart.BAUDRATES) - set(rates)))))
+    if rate:
+      rates = filter(lambda x: x != rate, rates)
+      rates = tuple([rate]) + tuple(rates)
+    
+    try:
+      for uart.uart.port in ports:
+        build = False
+        try:
+          for uart.uart.baudrate in rates:
+            print("Trying", uart.uart.port, uart.uart.baudrate, "... ")
+            uart.uart.open()
+            try:
+              build = uart.access(0, 0x60, bytearray(8))
+              break;
+            except:
+              if uart.uart.baudrate == rates[-1]: raise
+              else:                               continue
+        except:
+          if uart.uart.port == ports[-1]: raise
+          else:                           continue
+        if build: break
+    except:
+      print("Failed to autoconnect. Defaulting to the first listed ...")
+      uart.uart.port     = ports[0]
+      uart.uart.baudrate = rates[0]
+ 
+    print("Device:", uart.uart.port, "- rate:", uart.uart.baudrate)
+    
+    if port and port != uart.uart.port:     print("Port changed (", port, "->", uart.uart.port    , ")")
+    if rate and rate != uart.uart.baudrate: print("Rate changed (", rate, "->", uart.uart.baudrate, ")")
+    
+    #
+    # Meta
+    #
+    def extract_build(meta):
+      return bytearray([
+        meta['macros']["BUILD_SEC"    ],
+        meta['macros']["BUILD_MIN"    ],
+        meta['macros']["BUILD_HOUR"   ],
+        meta['macros']["BUILD_WEEKDAY"],
+        meta['macros']["BUILD_DAY"    ],
+        meta['macros']["BUILD_MONTH"  ]] +
+        list(tools.to_bytes(meta['macros']["BUILD_YEAR"   ], 2)))
+ 
+    sws = filter(lambda x: x[0:6] == "update" and x[-8:] == ".tar.bz2", os.listdir("."))
+    sws = sorted(sws, key=lambda x: os.stat(x).st_mtime)
+    if sw:
+      sws = filter(lambda x: x == sw, sws)
+      sws = tuple([sw]) + tuple(sws)
+    
+    def sw2meta(sw):
+      pickled_meta = packer.getfile(sw, 'meta')
+      if pickled_meta: return pickle.load(pickled_meta)
+      else           : return None
+    
+    meta_latest  = None
+    build_latest = bytearray(8)
+    metafs = tuple([lambda: meta]) + tuple(map(lambda x: lambda: sw2meta(x), sws))
+    for metaf in metafs:
+      meta = metaf()
+      if meta:
+        build_curr = extract_build(meta)
+        if meta and build_curr == build:
+          break
+        elif bytearray(reversed(build_curr)) > bytearray(reversed(build_latest)):
+          meta_latest  = meta
+          build_latest = build_curr
+      if metaf == metafs[-1]:
+        if not meta_latest: raise Exception("No meta found")
+        print("Failed to find appropriate meta (", build, "). Failing back to latest found (", build_latest, ").")
+        meta  = meta_latest
+        build = build_latest
+
+    print("Meta build:", tools.mcutime(build))
+      
+    uart.max_write_len = meta['symbols']['rx_buf']['size']
+    Gum.meta = meta
 
   def __del__(self):
     with Gum.icnt_lock:
@@ -262,7 +226,7 @@ class Gum():
     
     time.sleep(1.0)
     print("Reconnecting...")
-    connect()
+    self.connect()
     print("Reinitializing debuging stuff...")
     self.exexec('debug_init')
   

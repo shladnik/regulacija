@@ -254,21 +254,27 @@ if any(recompile.values()):
 
 packer.pack(cmptime)
 
-import base64
-encodedstring = base64.encodebytes(bytes(b"servis:t0r0nt0"))[:-1]
-auth = "Basic %s" % encodedstring
+#encodedstring = base64.encodebytes(bytes(b"servis:t0r0nt0"))[:-1]
+#auth = "Basic %s" % encodedstring
+#
+#
+#auth_handler = urllib.request.HTTPBasicAuthHandler()
+##auth_handler.add_password(realm=None, uri='http://stefuc.homeip.net:8000/update_upload', user='servis', passwd='t0r0nt0')
+#auth_handler.add_password(realm=None, uri='http://stefuc.homeip.net:8000/update_upload', user=None, passwd={"Authorization": auth })
+#opener = urllib.request.build_opener(auth_handler)
+#urllib.request.install_opener(opener)
+#
+#req = urllib.request.Request("http://stefuc.homeip.net:8000/update")
+#req.add_header("Authorization", auth)
+#
+#urllib.request.urlopen(req) 
 
-
-auth_handler = urllib.request.HTTPBasicAuthHandler()
-#auth_handler.add_password(realm=None, uri='http://stefuc.homeip.net:8000/update_upload', user='servis', passwd='t0r0nt0')
-auth_handler.add_password(realm=None, uri='http://stefuc.homeip.net:8000/update_upload', user=None, passwd={"Authorization": auth })
-opener = urllib.request.build_opener(auth_handler)
-urllib.request.install_opener(opener)
-
-req = urllib.request.Request("http://stefuc.homeip.net:8000/update")
-req.add_header("Authorization", auth)
-
-urllib.request.urlopen(req) 
-#  open("update.tar.bz2").read())
+#import poster
+#poster.streaminghttp.register_openers()
+#datagen, headers = poster.encode.multipart_encode({ 'update' : open("update.tar.bz2") })
+#
+#req = urllib.request.Request("http://stefuc.homeip.net:8000/flash", datagen, headers)
+#res = urllib.request.urlopen(req)
+#print(res.read())
 
 open(".timestamp", 'w')

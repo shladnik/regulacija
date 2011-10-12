@@ -36,13 +36,9 @@ def update(a):
   if type(a) == str: a = tarfile.open(a, mode='r:bz2')
   else:              a = tarfile.open(fileobj = a, mode='r|bz2')
 
-  bootloader = a.extractfile("bootloader.bin")
-  if bootloader: gum.flash_bootloader(bootloader)
-  
-  fw = a.extractfile("fw.bin")
-  if fw: gum.flash_fw(fw)
-  
-  other = a.getmembers()
-  other = filter(lambda x: x.name != "bootloader.bin", other)
-  other = filter(lambda x: x.name != "fw.bin"        , other)
-  a.extractall(members=other)
+  a.extractall()
+  names = a.getnames()
+  if "bootloader.bin" in names or "fw.bin" in names:
+    gumi = gum.Gum()
+    if "bootloader.bin" in names: gumi.flash_bootloader(open("bootloader.bin", 'rb'))
+    if "fw.bin"         in names: gumi.flash_fw        (open("fw.bin"        , 'rb'))

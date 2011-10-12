@@ -354,39 +354,39 @@ class Regulation(object):
   def flash(self, fw_bin = None, bootloader_bin = None, update = None):
     body = el('body')
 
-    form = el("form")
-    form.text = "Firmware:"
-    form.attrib['method'] = 'post'
-    form.attrib['enctype'] = 'multipart/form-data'
-    file_input = el("input")
-    file_input.attrib['type'] = 'file'
-    file_input.attrib['name'] = 'fw_bin'
-    form.append(file_input)
-    submit = el("input")
-    submit.attrib['type'] = 'submit'
-    form.append(submit)
-    body.append(form)
-    
-    if fw_bin:
-      body.text = "Flashed fw with " + fw_bin.filename
-      gumi.flash_fw(fw_bin.file)
-    
-    form = el("form")
-    form.text = "Bootloader:"
-    form.attrib['method'] = 'post'
-    form.attrib['enctype'] = 'multipart/form-data'
-    file_input = el("input")
-    file_input.attrib['type'] = 'file'
-    file_input.attrib['name'] = 'bootloader_bin'
-    form.append(file_input)
-    submit = el("input")
-    submit.attrib['type'] = 'submit'
-    form.append(submit)
-    body.append(form)
-    
-    if bootloader_bin:
-      body.text = "Flashed bootloader with " + bootloader_bin.filename
-      gumi.flash_bootloader(bootloader_bin.file)
+    #form = el("form")
+    #form.text = "Firmware:"
+    #form.attrib['method'] = 'post'
+    #form.attrib['enctype'] = 'multipart/form-data'
+    #file_input = el("input")
+    #file_input.attrib['type'] = 'file'
+    #file_input.attrib['name'] = 'fw_bin'
+    #form.append(file_input)
+    #submit = el("input")
+    #submit.attrib['type'] = 'submit'
+    #form.append(submit)
+    #body.append(form)
+    #
+    #if fw_bin:
+    #  body.text = "Flashed fw with " + fw_bin.filename
+    #  gumi.flash_fw(fw_bin.file)
+    #
+    #form = el("form")
+    #form.text = "Bootloader:"
+    #form.attrib['method'] = 'post'
+    #form.attrib['enctype'] = 'multipart/form-data'
+    #file_input = el("input")
+    #file_input.attrib['type'] = 'file'
+    #file_input.attrib['name'] = 'bootloader_bin'
+    #form.append(file_input)
+    #submit = el("input")
+    #submit.attrib['type'] = 'submit'
+    #form.append(submit)
+    #body.append(form)
+    #
+    #if bootloader_bin:
+    #  body.text = "Flashed bootloader with " + bootloader_bin.filename
+    #  gumi.flash_bootloader(bootloader_bin.file)
 
     form = el("form")
     form.text = "Update:"
@@ -463,10 +463,12 @@ cherrypy.quickstart(Regulation(), '', {
     'server.socket_port'        : 8000,
     'tools.sessions.on'         : False,
     'tools.gzip.on'             : False,
+    
     # SSL 
     #'tools.to_https.on'         : True, # doesn't work...
     #'server.ssl_certificate'    : 'security/home_cert.crt',
     #'server.ssl_private_key'    : 'security/home_cert.key',
+    
     # Authentication
     'tools.auth_digest.on'      : True,
     'tools.auth_digest.realm'   : 'home',
