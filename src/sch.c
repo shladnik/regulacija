@@ -20,6 +20,8 @@ void sch_add(func_t func /*, uint8_t level*/)
 {
   DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
+    DBG2CP static func_t last_sch_add_func;
+    last_sch_add_func = func;
     assert(queue[wp] == 0);
     queue[wp] = func;
     wp = pinc(wp);

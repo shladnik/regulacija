@@ -6,9 +6,8 @@ import cherrypy.lib.auth_digest
 import inspect
 import time
 import sys
-import itertools
 import os
-import sys
+import threading
 
 import gum
 import tools
@@ -388,27 +387,32 @@ class Regulation(object):
     #  body.text = "Flashed bootloader with " + bootloader_bin.filename
     #  gumi.flash_bootloader(bootloader_bin.file)
 
-    form = el("form")
-    form.text = "Update:"
-    form.attrib['method'] = 'post'
-    form.attrib['enctype'] = 'multipart/form-data'
-    file_input = el("input")
-    file_input.attrib['type'] = 'file'
-    file_input.attrib['name'] = 'update'
-    form.append(file_input)
-    submit = el("input")
-    submit.attrib['type'] = 'submit'
-    form.append(submit)
-    body.append(form)
-    
     if update:
-      body.text = "Applied " + update.filename
+      body.text = "Applying " + update.filename
       sf = open(update.filename, mode='wb')
       sf.write(update.file.read())
       sf.close()
 
-      packer.update(update.filename)
-      os.execv(sys.argv[0], sys.argv)
+      def update_thread():
+        packer.update(update.filename)
+        time.sleep(1)
+        os.execv(sys.argv[0], sys.argv)
+      
+      threading.Thread(target = update_thread).start()
+    else:
+      form = el("form")
+      form.text = "Update:"
+      form.attrib['method'] = 'post'
+      form.attrib['enctype'] = 'multipart/form-data'
+      file_input = el("input")
+      file_input.attrib['type'] = 'file'
+      file_input.attrib['name'] = 'update'
+      form.append(file_input)
+      submit = el("input")
+      submit.attrib['type'] = 'submit'
+      form.append(submit)
+      body.append(form)
+    
 
 
     return self.skeleton(body)

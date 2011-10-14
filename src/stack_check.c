@@ -1,6 +1,7 @@
 uintptr_t find_free(uintptr_t start, uintptr_t end)
 {
 #if 1 /* this is not needed as long as we don't use 'heap' */
+  /* this will recurse very deep if ram is not initialized */
   while (start < end) {
     if (*(uint8_t *)start == 0x55) {
       break;
@@ -44,11 +45,24 @@ uintptr_t find_free(uintptr_t start, uintptr_t end)
 __attribute__((used))
 uintptr_t stack_check()
 {
-  /* this works as long as we don't use heap */
+#if 0
   extern uint8_t __heap_start;
   uintptr_t start = (uintptr_t)&__heap_start;
   uintptr_t end   = SP;
   return find_free(start, end);
+#else
+  extern uint8_t __heap_start;
+  uintptr_t max_len = 0;
+  uintptr_t len     = 0;
+  uint8_t * i;
+  for (i = &__heap_start; i < (uint8_t *)SP; i++) {
+    if (*i == 0x55) len++;
+    else            len = 0;
+    max_len = MAX(max_len, len);
+  }
+
+  return max_len;
+#endif
 }
 
 __attribute__((used))

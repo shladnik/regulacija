@@ -222,9 +222,9 @@ class Gum():
     print("Time elapsed:", time.clock() - start)
     
     if uart.get() != 0xa5: raise Exception("Failed!")
-    else:                   print("Succeed!")
+    else:                  print("Succeed!")
     
-    time.sleep(1.0)
+    time.sleep(2.0)
     print("Reconnecting...")
     self.connect()
     print("Reinitializing debuging stuff...")
