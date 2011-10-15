@@ -184,11 +184,16 @@ class Gum():
   #
   
   def flash_fw(self, f):
+    print("Saving config ... ", end="")
+    conf = self.get_config()
+    print("done.")
+
     try:
-      print("Entering bootloader...")
+      print("Executing bootloader ... ", end="")
       self.exexec(self.meta['symbols']['__bootloader_adr']['adr'], block = False)
+      print("done.")
     except:
-      print("Error... trying if it's already running...")
+      print("Error. Maybe already running.")
       uart.reset()
     
     print("Waiting for initial ACK ...", end=" ")
@@ -224,11 +229,16 @@ class Gum():
     if uart.get() != 0xa5: raise Exception("Failed!")
     else:                  print("Succeed!")
     
-    time.sleep(2.0)
+    time.sleep(3.0)
     print("Reconnecting...")
     self.connect()
-    print("Reinitializing debuging stuff...")
+    print("Reinitializing debuging stuff ... ", end="")
     self.exexec('debug_init')
+    print("Done.")
+
+    print("Restoring config ... ", end="")
+    self.set_config(conf)
+    print("done.")
   
   def flash_bootloader(self, f):
     print("Flashing bootloader...")
@@ -373,3 +383,15 @@ class Gum():
   
   def set_time(self, t = time.localtime(), format = None):
     self.write_symbol('date', tools.construct_time(t, format))
+
+  def get_config(self):
+    syms = self.meta['symbols']
+    conf = filter(lambda x: syms['__config_start']['adr'] <= syms[x]['adr'] < syms['__config_end']['adr'] and syms[x]['size'], syms)
+    conf = list(conf); print(conf)
+    return tuple(map(lambda x: (x, self.read_symbol(x)), conf))
+
+  def set_config(self, conf):
+    for i in conf:
+      print(i)
+      if i[0] in self.meta['symbols']:
+        self.write_symbol(i[0], i[1])
