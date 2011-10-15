@@ -127,6 +127,12 @@ void lcd_loop()
 {
   lcd_init();
   lcd_refresh();
+  temp_t temp_tab [DS18B20_NR];
+  for (uint8_t i = 0; i < DS18B20_NR; i++) temp_tab[i] = i;
+  ds18b20_get_temp_tab(DS18B20_NR, RESOLUTION_9, 2, temp_tab);
+  int8_t temp_tab_int [DS18B20_NR];
+  for (uint8_t i = 0; i < DS18B20_NR; i++) temp_tab_int[i] = TEMP2I(temp_tab[i]);
+
 #if 0
   lprintf(0, 0,
     "His|Hle|Pec|Kol|Rad?"
@@ -134,24 +140,24 @@ void lcd_loop()
     "   |   |   |   |    "
     "   |   |   |   |    ");
 
-  lprintf(1,  0, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_HOUSE_0,    RESOLUTION_9)));
-  lprintf(2,  0, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_HOUSE_S_T,  RESOLUTION_9)));
-  lprintf(3,  0, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_HOUSE_S_B,  RESOLUTION_9)));
+  lprintf(1,  0, "%3d", temp_tab_int[DS18B20_HOUSE_0  ]);
+  lprintf(2,  0, "%3d", temp_tab_int[DS18B20_HOUSE_S_T]);
+  lprintf(3,  0, "%3d", temp_tab_int[DS18B20_HOUSE_S_B]);
 
   lprintf(0,  3, "%c", pumping_state == PUMPING_S2H ? '<' : (pumping_state == PUMPING_H2S ? '>' : '|'));
-  lprintf(1,  4, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_STABLE_S_T, RESOLUTION_9)));
-  lprintf(2,  4, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_STABLE_S_B, RESOLUTION_9)));
+  lprintf(1,  4, "%3d", temp_tab_int[DS18B20_STABLE_S_T]);
+  lprintf(2,  4, "%3d", temp_tab_int[DS18B20_STABLE_S_B]);
 
-  lprintf(1,  8, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_FURNACE_T,  RESOLUTION_9)));
-  lprintf(2,  8, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_FURNACE_B,  RESOLUTION_9)));
+  lprintf(1,  8, "%3d", temp_tab_int[DS18B20_FURNACE_T]);
+  lprintf(2,  8, "%3d", temp_tab_int[DS18B20_FURNACE_B]);
   lprintf(3,  8, "%c",  relay_get(RELAY_PUMP_FURNACE) ? '*' : ' ');
   lprintf(3, 10, "%c",  valve_opened(VALVE_FURNACE) ? '|' : (valve_closed(VALVE_FURNACE) ? '-' : '/'));
 
-  lprintf(1, 12, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_COLLECTOR,  RESOLUTION_9)));
+  lprintf(1, 12, "%3d", temp_tab_int[DS18B20_COLLECTOR]);
   lprintf(3, 12, "%c",  relay_get(RELAY_PUMP_COLLECTOR) ? '*' : ' ');
 
-  lprintf(1, 16, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_RADIATOR_U, RESOLUTION_9)));
-  lprintf(2, 16, "%3d", TEMP2I(ds18b20_get_temp(DS18B20_RADIATOR_D, RESOLUTION_9)));
+  lprintf(1, 16, "%3d", temp_tab_int[DS18B20_RADIATOR_U]);
+  lprintf(2, 16, "%3d", temp_tab_int[DS18B20_RADIATOR_D]);
   lprintf(3, 16, "%c",  relay_get(RELAY_PUMP_RADIATOR)  ? '*' : ' ');
   lprintf(3, 18, "%c",  valve_opened(VALVE_RADIATOR)    ? '|' : (valve_closed(VALVE_RADIATOR) ? '-' : '/'));
 #else
@@ -162,18 +168,18 @@ void lcd_loop()
     "%3d|   |%c %c|%c  |%c %c ",
       pumping_state == PUMPING_S2H ? '<' : (pumping_state == PUMPING_H2S ? '>' : '|'),
       
-      TEMP2I(ds18b20_get_temp(DS18B20_HOUSE_0,    RESOLUTION_9, 1)),
-      TEMP2I(ds18b20_get_temp(DS18B20_STABLE_S_T, RESOLUTION_9, 1)),
-      TEMP2I(ds18b20_get_temp(DS18B20_FURNACE_T,  RESOLUTION_9, 1)),
-      TEMP2I(ds18b20_get_temp(DS18B20_COLLECTOR,  RESOLUTION_9, 1)),
-      TEMP2I(ds18b20_get_temp(DS18B20_RADIATOR_U, RESOLUTION_9, 1)),
+      temp_tab_int[DS18B20_HOUSE_0   ],
+      temp_tab_int[DS18B20_STABLE_S_T],
+      temp_tab_int[DS18B20_FURNACE_T ],
+      temp_tab_int[DS18B20_COLLECTOR ],
+      temp_tab_int[DS18B20_RADIATOR_U],
   
-      TEMP2I(ds18b20_get_temp(DS18B20_HOUSE_S_T,  RESOLUTION_9, 1)),
-      TEMP2I(ds18b20_get_temp(DS18B20_STABLE_S_B, RESOLUTION_9, 1)),
-      TEMP2I(ds18b20_get_temp(DS18B20_FURNACE_B,  RESOLUTION_9, 1)),
-      TEMP2I(ds18b20_get_temp(DS18B20_RADIATOR_D, RESOLUTION_9, 1)),
+      temp_tab_int[DS18B20_HOUSE_S_T ],
+      temp_tab_int[DS18B20_STABLE_S_B],
+      temp_tab_int[DS18B20_FURNACE_B ],
+      temp_tab_int[DS18B20_RADIATOR_D],
 
-      TEMP2I(ds18b20_get_temp(DS18B20_HOUSE_S_B,  RESOLUTION_9, 1)),
+      temp_tab_int[DS18B20_HOUSE_S_B ],
       relay_get(RELAY_PUMP_FURNACE)   ? '*' : ' ',
       valve_opened(VALVE_FURNACE)     ? '|' : (valve_closed(VALVE_FURNACE)  ? '-' : '/'),
       relay_get(RELAY_PUMP_COLLECTOR) ? '*' : ' ',
