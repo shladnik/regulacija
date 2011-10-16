@@ -178,10 +178,9 @@ class Regulation(object):
       if name == s.tag:
         value = int(float(value) * div)
         gumi.write_symbol(name, value)
-      value = int(gumi.read_symbol(s.tag))
-      print(hex(value), hex(1 << size))
-      if value >= (1 << size): value -= 2 << size
-      textfield.attrib['value'] = str(1.0*value / div)
+      rval = int(gumi.read_symbol(s.tag))
+      if rval >= (1 << size): rval -= 2 << size
+      textfield.attrib['value'] = str(1.0*rval / div)
       p.append(textfield)
 
       submit = el('input')
