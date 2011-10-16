@@ -197,18 +197,19 @@ if cmptime:
   for w in os.walk("."):
     for f in w[2]: newer.add(w[0] + "/" + f)
   newer = filter(lambda x: os.stat(x).st_mtime > cmptime, newer)
-  newer = filter(lambda x: x      != "./meta"      , newer)
-  newer = filter(lambda x: x[-4:] != ".pyc"        , newer)
-  newer = filter(lambda x: x[-4:] != ".swp"        , newer)
-  newer = filter(lambda x: x[-8:] != ".tar.bz2"    , newer)
+  newer = filter(lambda x: x[0:7] != "./.git/" , newer)
+  newer = filter(lambda x: x      != "./meta"  , newer)
+  newer = filter(lambda x: x[-4:] != ".pyc"    , newer)
+  newer = filter(lambda x: x[-4:] != ".swp"    , newer)
+  newer = filter(lambda x: x[-8:] != ".tar.bz2", newer)
   newer = set(newer)
   if (newer):
     print("Modified files:")
     for f in newer: print(f)
-  newer = filter(lambda x: x != "./py/server.py"     , newer)
-  newer = filter(lambda x: x != "./py/gum.py"        , newer)
-  newer = filter(lambda x: x != "./py/uart.py"       , newer)
-  newer = filter(lambda x: x != "./py/html_tools.py" , newer)
+  newer = filter(lambda x: x != "./py/server.py"    , newer)
+  newer = filter(lambda x: x != "./py/gum.py"       , newer)
+  newer = filter(lambda x: x != "./py/uart.py"      , newer)
+  newer = filter(lambda x: x != "./py/html_tools.py", newer)
   newer = set(newer)
   
   if newer:
