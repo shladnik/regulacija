@@ -20,17 +20,23 @@ void temp_ctl_relay(temp_t temp, RELAY relay, temp_t start, temp_t stop)
 
 void collector_loop()
 {
-  temp_t t_collector  = ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 7);
-  temp_t t_stable_s_b = ds18b20_get_temp(DS18B20_STABLE_S_B, RESOLUTION_9, 7);
+  temp_t tab [] = {
+    DS18B20_STABLE_S_B,
+    DS18B20_COLLECTOR,
+  };
+
+  ds18b20_get_temp_tab(sizeof(tab)/sizeof(temp_t), RESOLUTION_9, 7, tab);
+  temp_t t_stable_s_b = tab[0];
+  temp_t t_collector  = tab[1];
 
   if (!temp_in_range(t_collector,  TEMP(-30), TEMP(90)) ||
       !temp_in_range(t_stable_s_b, TEMP(-30), TEMP(90))) {
     relay_on (RELAY_PUMP_COLLECTOR);
   } else {
 
-  if (t_collector - t_stable_s_b > TEMP(10))
+  if (t_collector - t_stable_s_b > CONFIG_GET(collector_diff_on))
     relay_on (RELAY_PUMP_COLLECTOR);
-  else if (t_collector - t_stable_s_b < TEMP(5))
+  else if (t_collector - t_stable_s_b < CONFIG_GET(collector_diff_off))
     relay_off(RELAY_PUMP_COLLECTOR);
   }
 }
