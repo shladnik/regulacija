@@ -79,5 +79,11 @@
   <radiator_goal format="s7.8" reset="10.0">
     Zeljena temperatura dviznega voda
   </radiator_goal>
+  <collector_diff_on format="s7.8" reset="10.0">
+    Razlika temperatur pri kateri naj se crpalka prizge.
+  </collector_diff_on>
+  <collector_diff_off format="s7.8" reset="5.0">
+    Razlika temperatur pri kateri naj se crpalka ugasne.
+  </collector_diff_off>
 </config_list>
 </root>
