@@ -74,13 +74,14 @@ SLO
 Virtualna prisotnost vs virtualni obstoj
 
 
-Virtualna prisotnost kot prisotnost na spletu.
-Facebook, Second Life... Vprasljiva uporabnost.
-Za to je sicer potrebno definirat 'uporabno'. Moja
+Virtualna obstoj kot obstoj na spletu.
+Second Life, Facebook, MySpace in se bi lahko nasteval, ce bi spremljal to
+sceno ... Nekoristno?
+Za to je sicer potrebno definirat 'koristno'. Moja
 definicija, vsaj tekom tega predavanja, je, da mora stvar
 imet pozitivne ucinke na razvoj in obstoj clovestva. 
 Ce jih nima, potem je dolgorocno obsojena na propad.
-To je zakon evolucije.
+Verjamem v zakon evolucije, bi lahko temu rekel.
 Seveda ni vse crno-belo, tud Facebook ma svoje pozititivne
 ucinke, sem se ze kdaj dogovoril za pivo preko facebooka.
 
@@ -91,12 +92,15 @@ Oziroma, drugace povedano, vse kar nam prihrani denar,
 denar ali denar.
 Kaj to pomen? - Vec denarja za pivo.
 
+Na drugi strani, ce se vrnemo na Facebook & co., je velikokrat
+orodje za tratenje casa. Cas == denar, torej tosimo denar.
+
 
 
 Oddaljeno lahko nadziramo od banalnosti kot so luci,
 ogrevanje in ostale stvari ki so obicajno zajete pod obrabljenim
 pojmom - pametne hise. Lahko pa tudi alarm in videonadzor,
-nadzor otrok in vcasih - zene.
+nadzor otrok, zene...
 
 Ce se razsirmo na industrijo. Tam se da nadzirat se marsikaj.
 Od delovanja strojev, zalog materiala ali izdelkov.
@@ -104,4 +108,70 @@ Ce smo spet malo zlovesci, delavce.
 Na zalost se velikokrat zgodi, da je 'pametna' napeljava samo
 v pisarnah in ne tam, kjer bi res koristila.
 
-Takih in podobnih stvart je polno
+
+Ne gre pa samo za krmiljenje stvari. Obicajno je enostavno temu
+dodati se zajem in analizo podatkov. Na ta nacin pa lahko pridemo
+tudi do novih idej za optimizacije in novih projektov.
+
+
+Vse to je ze na trgu, a ljudje se bolj malo odlocajo za to.
+- Je predrago?
+Obstojece resitve obicajno pomenijo en kup
+kablovja in ogromne omare tehnike. A nebi moralo to 
+pomenit vsaj manj kablovja, ce ne celo tehnike - vsaj v
+masi gledano.
+Druga stvar je, da se za pametno instalacijo odlocajo kvecjemu
+ob novogradnjah. To je deloma tudi posledica kolicine s tem
+povezanega kablovja.
+- Je sploh interes?
+Energijska ucinkovetost je vedno bolj 'in'. Pametna logika
+prav gotovo pripomore k temu.
+Tudi lenoba je ze od nekdaj ali morda celo vedno bolj popularna.
+Z dostopnostjo gotovo zraste tudi interes.
+
+
+Kaj bi se dalo tu narediti?
+Bolj poceni, preprost, skalabilen in portabilen dizajn. Pa sem spet uporabil
+nekaj izmuzljivih 'top shop style' izrazov, ki bi jih do neke mere lahko
+apliciral na cisto vsak SW/HW projekt. Jih bom poskusil se na svoj projekt.
+
+Namesto ene kompleksne centralne kontrole, vec majhnih enotic, ki so
+v osnovi sposobne kar se da samostojno funkcionirati. Ce uspemo
+naredit eno zelo poceni in majhno enotico (uC + TRIAC), sposobno
+komunikacije (Powerline!), in se branja kakega senzorja, vse to za ceno nekaj
+metrov kablovja smo zmagali. Ne samo da smo prisli skupaj s ceno, poenostavili
+in pocenili smo tudi montazo. In ce smo poenostavili montazo do te mere, da
+sploh ne potrebujemo novega kablovja, je stvar kar naenkrat bolj primerna tudi 
+za opremljanje obstojecih zgradb.
+Recimo da sem 'poceni in preprosto' utemleljil. Skalabilno je bolj stvar
+software-a in protokola med temi enoticami - za to rabis nadarjenega,
+izkusenega in motiviranega programerja. Zato sem seveda izbral najboljsega
+izmed vseh kandidatov. No, izbral sem sebe. Ne samo da sem bil edini primeren
+kandidat, bil sem celo edini kandidat. Vsaj zaenkrat.
+
+Treba je poskrbet se za vmesnik in ostalo vizualizacijo. In navsezadnje za
+povezavo tega vseka skupaj z naravo tega dogodka tukaj. Za vmesnik sem izbral kar
+HTML. Primarni in edini vmesnik. Si lahko predstavljate kaj bolj portabilnega?
+Skoraj ni telefona, ki ga nebi znal prikazat. Nobenih appov, pluginov, windows vs
+linux vs mac odlocitev. Se malo konzervativnost pri izbiri standardov in imamo
+'just works' na vsaki platformi.
+
+Priblizno temu posvecam prakticno ves svoj prosti cas. Namesto facebooka,
+recimo. Casa sicer nimam ravno na pretek, saj imam dobro sluzbo, in tudi sicer
+ne hodim samo v sluzbo, ampak hodim delat. Do predkratkim smo bili se start-up.
+Morda zato, ker ni vec tistega pravega start-up duha, ali morda zato, ker sem
+tu ze vec kot pet let, iscem nove izzive.
+Manjka mi casa, manjka mi prakticnih izkusenj in manjka mi debate. Zato pa sem
+tukaj, da mal nakladam. Ampak debata naj bi bla dvosmerna, tako da upam tud na
+malo feedbacka.
+
+Da nekako zakljucim. Veliko sposobnih ljudi dela na kakih visokoletecih
+in zelo dolgotrajnih projektih iz katerih se ponavadi ne izcimi nic. Ali pa na
+projektih, ki le pomagajo ljudem zapravljat cas (khm... facebook... khm).
+Obicajno gre za zapravljanje prostega casa, velikokrat pa tudi za delovni cas.
+Mislim, da je veliko bolj preprostih in ocitnih priloznosti, ki se morda na
+prvi pogled zdijo prevec enostavne. Morda pa bi se vendarle dalo kaj
+spremeniti, cenejse ali kako drugace boljse narediti. Nemoremo vsi izumljati
+fuzijo ali zdravila proti raku. Namesto z enim velikim, lahko z veliko
+majhnimi koraki prispevamo clovestvu vec. Ali, ce hocete, in vem da hocete,
+vasim prihodkom.
