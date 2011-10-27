@@ -1,5 +1,5 @@
 uint64_t exexec_buf;
-exexec_func_t exexec_func;
+DBG2CP exexec_func_t exexec_func;
 
 void exexec()
 {

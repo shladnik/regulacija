@@ -59,7 +59,7 @@ def config_list(element, c, h):
     decl += d.tag
 
     c.write('__attribute__((section(".config"))) ' + decl + ' = ' + hex(reset) + ';')
-    h.write('extern ' + decl + ';')
+    h.write('extern ' + decl + ';\n')
 
 def list2c(element):
   if element.tag[-5:] == "_list":

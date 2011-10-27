@@ -6,11 +6,11 @@ void radiator_loop()
 
   temp_t curr = read_1 + (read_1 - read_0) * 16;
 
-  CONFIG_READ(goal, radiator_goal);
-
+  temp_t goal = CONFIG_GET(radiator_goal);
   if (goal < 0) {
-    temp_t t_collector = ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 7);
-    goal = TEMP(20) + (TEMP(20) - t_collector);
+    const temp_t wanted = TEMP(23);
+    temp_t goal_auto = wanted + (wanted - ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 7));
+    goal = MAX(wanted, goal_auto);
   }
 
   bool dir = curr > goal;
@@ -27,3 +27,30 @@ void radiator_loop()
     relay_on (RELAY_PUMP_RADIATOR);
 }
 
+void radiator_loop_new()
+{
+  temp_t tab [] = {
+    DS18B20_RADIATOR_U,
+    DS18B20_RADIATOR_D,
+    DS18B20_HOUSE_S_T,
+  };
+  
+  ds18b20_temp_tab_fill(RESOLUTION_11, 7, tab);
+  
+  CONFIG static temp_t  ambient_temp = TEMP(23);
+  CONFIG static uint8_t heating_f    = 4.0 * 0x10;
+  CONFIG static temp_t  storage_off  = TEMP(10);
+
+  temp_t goal = CONFIG_GET(ambient_temp);
+  goal += (uint32_t)(tab[0] - tab[1]) * CONFIG_GET(heating_f) / 0x10;
+  goal = MIN(goal, tab[2] - storage_off);
+
+  valve_state_t amount = TIMER_S(6);
+  if (goal > tab[1]) valve_close_for(VALVE_RADIATOR, amount);
+  else               valve_open_for (VALVE_RADIATOR, amount);
+  
+  if (valve_opened(VALVE_RADIATOR))
+    relay_off(RELAY_PUMP_RADIATOR);
+  else
+    relay_on (RELAY_PUMP_RADIATOR);
+}

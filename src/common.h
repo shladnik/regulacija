@@ -3,6 +3,7 @@
 
 #define NOINIT __attribute__((section(".noinit")))
 #define META   __attribute__((section(".meta")))
+#define CONFIG __attribute__((section(".config")))
 #define USED   __attribute__((used))
 #define INLINE __attribute__((always_inline))
 
