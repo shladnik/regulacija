@@ -110,7 +110,7 @@ class Gum():
           build_latest = build_curr
       if metaf == metafs[-1]:
         if not meta_latest: raise Exception("No meta found")
-        print("Failed to find appropriate meta (", build, "). Failing back to latest found (", build_latest, ").")
+        print("Failed to find appropriate meta (", tools.mcutime(build), "). Failing back to latest found (", tools.mcutime(build_latest), ").")
         meta  = meta_latest
         build = build_latest
 
@@ -324,7 +324,7 @@ class Gum():
   
     with self.exexec.lock:
       while self.read_symbol("exexec_func") != 0:
-        print("exexec busy!")
+        print("exexec busy with", hex(self.read_symbol("exexec_func")))
         time.sleep(1.0)
   
       self.write_symbol("exexec_buf", arg_buf)
@@ -399,12 +399,14 @@ class Gum():
 
   def get_config(self):
     conf = [ (x, self.read_symbol(x)) for x in self.meta['symbols'] if self.is_config(x) ]
-    print(conf)
+    for i in conf: print(i[0], hex(i[1]))
     return conf
 
   def set_config(self, conf):
     for i in conf:
-      print(i)
       if i[0] in self.meta['symbols']:
+        print(i[0], hex(i[1]))
         self.write_symbol(i[0], i[1])
+      else:
+        print("Skipping:", i[0], hex(i[1]))
 
