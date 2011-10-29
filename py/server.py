@@ -395,17 +395,21 @@ class Regulation(object):
     #  gumi.flash_bootloader(bootloader_bin.file)
 
     if update:
-      body.text = "Applying " + update.filename
-      sf = open(update.filename, mode='wb')
-      sf.write(update.file.read())
-      sf.close()
+      if update.filename[-8:] == ".tar.bz2":
+        body.text = "Applying " + update.filename
+        fn = update.filename[0:-8] + str(tools.mcutime()) + update.filename[-8:]
+        sf = open(fn, mode='wb')
+        sf.write(update.file.read())
+        sf.close()
 
-      def update_thread():
-        packer.update(update.filename)
-        time.sleep(1)
-        os.execv(sys.argv[0], sys.argv)
-      
-      threading.Thread(target = update_thread).start()
+        def update_thread():
+          packer.update(fn)
+          time.sleep(1)
+          os.execv(sys.argv[0], sys.argv)
+        
+        threading.Thread(target = update_thread).start()
+      else:
+        body.text = "File " + update.filename + " is not a valid update."
     else:
       form = el("form")
       form.text = "Update:"
