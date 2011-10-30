@@ -22,5 +22,6 @@ void ds18b20_init(DS18B20 i);
 void ds18b20_init_all();
 temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty);
 void ds18b20_get_temp_tab(DS18B20 nr, RESOLUTION r, uint8_t rty, temp_t * tab);
+#define ds18b20_temp_tab_fill(r, rty, tab) ds18b20_get_temp_tab(sizeof(tab)/sizeof(temp_t), r, rty, tab)
 
 #endif

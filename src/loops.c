@@ -12,6 +12,7 @@ const loop_t loop [] PROGMEM = {
   { collector_loop, TIMER_S(30)  },
   { furnace_loop  , TIMER_S(10)  },
   { radiator_loop , TIMER_S(10)  },
+//  { radiator_loop_new, TIMER_MIN(3) },
 };
 
 #define LOOP_NR (sizeof(loop)/sizeof(loop_t))

@@ -9,7 +9,7 @@ typedef struct {
   RESOLUTION resolution;
 } ds18b20_t;
 
-static const rom_t rom [] PROGMEM = {
+CONFIG static rom_t rom [] = {
 #include "ds18b20_list.c"
 };
 
@@ -72,14 +72,7 @@ void ds18b20_reset(timer_t rst_time)
 /* match rom wrapper */
 static void ds18b20_match_rom(DS18B20 i)
 {
-  rom_t romi;
-  if (i < DS18B20_NR) {
-    for (uint8_t j = 0; j < sizeof(rom_t); j++)
-      romi.rom[j] = pgm_read_byte(&rom[i].rom[j]);
-  } else {
-    romi = (rom_t){ { 0 } };
-  }
-  if (onewire_match_rom(romi)) ds18b20_error(i, ERR_NO_PRESENCE);
+  if (onewire_match_rom(i < DS18B20_NR ? CONFIG_GET(rom[i]) : (rom_t){{0}})) ds18b20_error(i, ERR_NO_PRESENCE);
 }
 
 

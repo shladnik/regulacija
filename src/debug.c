@@ -55,6 +55,13 @@ void debug()
   uint8_t rst_src = MCUCSR & RFMASK;
   MCUCSR = MCUCSR & ~RFMASK;
 
+  /* add bootloader "reset" flag */
+  PROGMEM static const char sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
+  if (memcmp_P((char *)0x60, sign, sizeof(sign)) == 0) {
+    rst_src |= RFMASK + 1;
+    rst_src &= ~(1 << WDRF);
+  }
+  
   if (rst_src & ~(1 << WDRF)) {
     debug_init();
   } else {

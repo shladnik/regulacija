@@ -14,7 +14,8 @@ def to_bytes(int_val, size):
   return arr
 
 class mcutime():
-  def __init__(self, t = time.localtime(), format = None):
+  def __init__(self, t = None, format = None):
+    if t == None: t = time.localtime()
     if   type(t) == str:
       if format == None: t = time.strptime(t)
       else:              t = time.strptime(t, format)

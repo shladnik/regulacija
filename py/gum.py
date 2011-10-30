@@ -34,9 +34,11 @@ class Gum():
     if port:
       ports = filter(lambda x: x != port, ports)
       ports = tuple([port]) + tuple(ports)
+    ports = tuple(filter(os.path.exists, ports))
+    if not port: raise Exception("No port found!")
     
     rates = ( 230400, 115200, 9600 )
-    rates = rates + tuple(reversed(sorted(tuple(set(uart.uart.BAUDRATES) - set(rates)))))
+    #rates = rates + tuple(reversed(sorted(tuple(set(uart.uart.BAUDRATES) - set(rates)))))
     if rate:
       rates = filter(lambda x: x != rate, rates)
       rates = tuple([rate]) + tuple(rates)
@@ -48,6 +50,7 @@ class Gum():
           for uart.uart.baudrate in rates:
             print("Trying", uart.uart.port, uart.uart.baudrate, "... ")
             uart.uart.open()
+            uart.reset(timeout = 0.02)
             try:
               build = uart.access(0, 0x60, bytearray(8))
               break;
@@ -58,8 +61,9 @@ class Gum():
           if uart.uart.port == ports[-1]: raise
           else:                           continue
         if build: break
-    except:
-      print("Failed to autoconnect. Defaulting to the first listed ...")
+    except Exception as inst:
+      print("Failed to autoconnect:", inst)
+      print("Defaulting to the first listed ...")
       uart.uart.port     = ports[0]
       uart.uart.baudrate = rates[0]
  
@@ -106,7 +110,7 @@ class Gum():
           build_latest = build_curr
       if metaf == metafs[-1]:
         if not meta_latest: raise Exception("No meta found")
-        print("Failed to find appropriate meta (", build, "). Failing back to latest found (", build_latest, ").")
+        print("Failed to find appropriate meta (", tools.mcutime(build), "). Failing back to latest found (", tools.mcutime(build_latest), ").")
         meta  = meta_latest
         build = build_latest
 
@@ -184,19 +188,19 @@ class Gum():
   #
   
   def flash_fw(self, f):
-    print("Saving config ... ", end="")
+    print("Saving config ... ")
     conf = self.get_config()
     print("done.")
 
     try:
-      print("Executing bootloader ... ", end="")
+      print("Executing bootloader ... ")
       self.exexec(self.meta['symbols']['__bootloader_adr']['adr'], block = False)
       print("done.")
     except:
       print("Error. Maybe already running.")
       uart.reset()
     
-    print("Waiting for initial ACK ...", end=" ")
+    print("Waiting for initial ACK ...")
     if uart.get(timeout = 30.0) != 0xa5: raise Exception("Failed to start bootloader")
     print("got!")
     
@@ -229,15 +233,16 @@ class Gum():
     if uart.get() != 0xa5: raise Exception("Failed!")
     else:                  print("Succeed!")
     
-    time.sleep(3.0)
+    time.sleep(5.0)
     print("Reconnecting...")
     self.connect()
-    print("Reinitializing debuging stuff ... ", end="")
-    self.exexec('debug_init')
-    print("Done.")
 
-    print("Restoring config ... ", end="")
+    print("Restoring config ... ")
     self.set_config(conf)
+    print("done.")
+
+    print("Setting time ... ")
+    self.set_time()
     print("done.")
   
   def flash_bootloader(self, f):
@@ -319,7 +324,7 @@ class Gum():
   
     with self.exexec.lock:
       while self.read_symbol("exexec_func") != 0:
-        print("exexec busy!")
+        print("exexec busy with", hex(self.read_symbol("exexec_func")))
         time.sleep(1.0)
   
       self.write_symbol("exexec_buf", arg_buf)
@@ -333,10 +338,9 @@ class Gum():
           expected = ( 1, self.meta['symbols']['exexec_func']['adr'], bytearray([0, 0]) )
           try:
             response = uart.receive(timeout = 30)
-            if response != expected: raise Exception("Exexec response failture.")
+            if response != expected: raise Exception("Exexec response failture (expected %s, got %s)." % (str(expected), str(response)))
           except:
-            response = self.read_symbol("exexec_func")
-            if response != expected: raise Exception("Exexec response failback failture.")
+            if self.read_symbol("exexec_func") != 0: raise Exception("Exexec response failback failture (expected %s, got %s)." % (str(expected), str(response)))
   
       if block:
         return_bytes = self.read_symbol("exexec_buf", None)
@@ -381,17 +385,28 @@ class Gum():
   
   
   
-  def set_time(self, t = time.localtime(), format = None):
-    self.write_symbol('date', tools.construct_time(t, format))
+  def set_time(self, t = None, format = None):
+    if t == None: t = time.localtime()
+    self.write_symbol('date', tools.mcutime(t, format).get())
+
+  def is_config(self, name):
+    syms = self.meta['symbols']
+    return syms['__config_start']['adr'] <= syms[name]['adr'] < syms['__config_end']['adr'] and syms[name]['size']
+
+  def is_mem(self, name):
+    syms = self.meta['symbols']
+    return syms[name]['mem'] == 'ram' and syms[name]['size']
 
   def get_config(self):
-    syms = self.meta['symbols']
-    conf = filter(lambda x: syms['__config_start']['adr'] <= syms[x]['adr'] < syms['__config_end']['adr'] and syms[x]['size'], syms)
-    conf = list(conf); print(conf)
-    return tuple(map(lambda x: (x, self.read_symbol(x)), conf))
+    conf = [ (x, self.read_symbol(x)) for x in self.meta['symbols'] if self.is_config(x) ]
+    for i in conf: print(i[0], hex(i[1]))
+    return conf
 
   def set_config(self, conf):
     for i in conf:
-      print(i)
       if i[0] in self.meta['symbols']:
+        print(i[0], hex(i[1]))
         self.write_symbol(i[0], i[1])
+      else:
+        print("Skipping:", i[0], hex(i[1]))
+

@@ -21,11 +21,15 @@ def put(b, delay = 0.0001):
   uart.write(bytes([b]))
   time.sleep(delay)
 
-def reset():
-  timeout = uart.timeout
-  uart.timeout = 1
-  while uart.read(256): pass
+def reset(timeout = 1):
+  timeout_orig = uart.timeout
   uart.timeout = timeout
+  foo = uart.read(256)
+  while foo:
+    print(foo)
+    foo = uart.read(256)
+  print("Uart flushed.")
+  uart.timeout = timeout_orig
 
 #
 # Flashing stuff
@@ -147,6 +151,7 @@ def access(write, adr, dat, rty = 2):
       except Exception as inst:
         # clear things up
         reset()
+        global rx_bytes
         rx_bytes = bytearray()
         print("Protocol error:", type(inst), inst)
         if rty:

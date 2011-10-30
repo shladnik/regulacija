@@ -153,7 +153,7 @@ class Regulation(object):
     gumi = gum.Gum()
     body = el("body")
     
-    for s in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("config_list").findall('*'):
+    for s in filter(lambda x: x in gumi.meta['symbols'], xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("config_list").findall('*')):
       form = el("form")
       form.attrib['action'] = ""
       
@@ -230,39 +230,47 @@ class Regulation(object):
                                     exexec_arg0  = None,
                                     exexec_arg1  = None,
                                     exexec_arg2  = None,
-                                    exexec_arg3  = None):
+                                    exexec_arg3  = None,
+                                                          **kwargs):
     gumi = gum.Gum()
     body = el('body')
   
     #
     # RAM Symbols
     #
-    form   = el("form")
-    form.attrib['action'] = ""
-    fieldset = el("fieldset")
+    body.append(html_tools.get_set_form([ x for x in gumi.meta['symbols'] if gumi.is_mem(x) ], "mem", **kwargs))
 
-    ram_list = filter(lambda x: gumi.meta['symbols'][x]['size'] > 0, gumi.meta['symbols'].keys())
-    ram_list = filter(lambda x: gumi.meta['symbols'][x]['mem'] == "ram", ram_list)
-    ram_list = list(ram_list)
-    ram_list.sort()
+    #form   = el("form")
+    #form.attrib['action'] = ""
+    #fieldset = el("fieldset")
+
+    #ram_list = filter(lambda x: gumi.meta['symbols'][x]['size'] > 0, gumi.meta['symbols'].keys())
+    #ram_list = filter(lambda x: gumi.meta['symbols'][x]['mem'] == "ram", ram_list)
+    #ram_list = list(ram_list)
+    #ram_list.sort()
+    #
+    #fieldset.append(html_tools.select(ram_list, "ram_symbol", selected = ram_symbol,
+    #                                  onchange = 'this.form.' + 'ram_val' + '.value=""; this.form.submit();'))
+
+    #val = ""
+    #if ram_symbol in ram_list:
+    #  if ram_val:
+    #    if ram_val[0:2] == '0x':
+    #      ram_val = int(ram_val[2:], 0x10)
+    #    else:
+    #      ram_val = int(ram_val)
+    #    gumi.write_symbol(ram_symbol, ram_val)
+    #  val = hex(gumi.read_symbol(ram_symbol))
+
+    #fieldset.append(el('input', type = 'text', name = 'ram_val', value = val))
+
+    #form.append(fieldset)
+    #body.append(form)
     
-    fieldset.append(html_tools.select(ram_list, "ram_symbol", selected = ram_symbol,
-                                      onchange = 'this.form.' + 'ram_val' + '.value=""; this.form.submit();'))
-
-    val = ""
-    if ram_symbol in ram_list:
-      if ram_val:
-        if ram_val[0:2] == '0x':
-          ram_val = int(ram_val[2:], 0x10)
-        else:
-          ram_val = int(ram_val)
-        gumi.write_symbol(ram_symbol, ram_val)
-      val = hex(gumi.read_symbol(ram_symbol))
-
-    fieldset.append(el('input', type = 'text', name = 'ram_val', value = val))
-
-    form.append(fieldset)
-    body.append(form)
+    #
+    # Config Symbols
+    #
+    body.append(html_tools.get_set_form([ x for x in gumi.meta['symbols'] if gumi.is_config(x) ], "config", **kwargs))
     
     #
     # exexec
@@ -387,17 +395,21 @@ class Regulation(object):
     #  gumi.flash_bootloader(bootloader_bin.file)
 
     if update:
-      body.text = "Applying " + update.filename
-      sf = open(update.filename, mode='wb')
-      sf.write(update.file.read())
-      sf.close()
+      if update.filename[-8:] == ".tar.bz2":
+        body.text = "Applying " + update.filename
+        fn = update.filename[0:-8] + str(tools.mcutime()) + update.filename[-8:]
+        sf = open(fn, mode='wb')
+        sf.write(update.file.read())
+        sf.close()
 
-      def update_thread():
-        packer.update(update.filename)
-        time.sleep(1)
-        os.execv(sys.argv[0], sys.argv)
-      
-      threading.Thread(target = update_thread).start()
+        def update_thread():
+          packer.update(fn)
+          time.sleep(1)
+          os.execv(sys.argv[0], sys.argv)
+        
+        threading.Thread(target = update_thread).start()
+      else:
+        body.text = "File " + update.filename + " is not a valid update."
     else:
       form = el("form")
       form.text = "Update:"

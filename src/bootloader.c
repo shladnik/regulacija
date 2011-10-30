@@ -58,7 +58,6 @@ void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
   uintptr_t end   = adr + len;
   uintptr_t i = ~(SPM_PAGESIZE - 1) & start;
   uintptr_t e = i + SPM_PAGESIZE;
-  uintptr_t start_a = start & ~0x1;
   uintptr_t end_a   = end   & ~0x1;
 
   eeprom_busy_wait();
@@ -66,6 +65,8 @@ void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
 
   bool change = 0;
 
+#if 0 // This is not needed for bootloader since it always writes blocks from the start
+  uintptr_t start_a = start & ~0x1;
   for (; i < start_a; i += 2) boot_page_fill(i, pgm_read_word(i));
   if (start & 0x1) {
     uint16_t dat_old = pgm_read_word(i);
@@ -75,6 +76,7 @@ void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
     boot_page_fill(i, dat);
     i += 2;
   }
+#endif
   for (; i < end_a; i += 2) {
     uint16_t dat_old = pgm_read_word(i);
     uint16_t dat = *buf;
@@ -176,6 +178,10 @@ int main()
     
     put(ACK);
   }
+  
+  /* bootloader sign, so fw knows that it was valid restart */
+  PROGMEM static const uint8_t sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
+  memcpy_P((char *)0x60, sign, sizeof(sign));
 
   put(ACK);
   restart();

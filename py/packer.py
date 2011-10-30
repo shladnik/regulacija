@@ -30,7 +30,8 @@ def unpack(f):
 def getfile(f, fn):
   if type(f) == str: f = tarfile.open(name = f, mode='r:bz2')
   else:              f = tarfile.open(fileobj = f)
-  return f.extractfile(fn)
+  if fn in f.getnames(): return f.extractfile(fn)
+  else                 : return None
 
 def update(a):
   if type(a) == str: a = tarfile.open(a, mode='r:bz2')

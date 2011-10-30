@@ -11,22 +11,24 @@ typedef struct {
   uint8_t  repeat;
 } cron_t;
 
-cron_t crons [MAX_CRONS] = {
-{ 0, 2, 6, 30, 2, daylight_saving, +1, -1},
-{ 0, 9, 6, 30, 2, daylight_saving, -1, -1},
+CONFIG cron_t crons [MAX_CRONS] = {
+{  0,  2,  6, 30,  2, daylight_saving, +1, -1 },
+{  0,  3,  6, 30,  9, daylight_saving, -1, -1 },
 };
 
 void cron()
 {
   for (uint8_t i = 0; i < MAX_CRONS; i++) {
-    if (crons[i].func) {
-      if (crons[i].min     < 60 && crons[i].min     != date.min    ) continue;
-      if (crons[i].hour    < 24 && crons[i].hour    != date.hour   ) continue;
-      if (crons[i].weekday <  7 && crons[i].weekday != date.weekday) continue;
-      if (crons[i].day     < 31) {
+    cron_t c = CONFIG_GET(crons[i]);
+
+    if (c.func) {
+      if (c.min     < 60 && c.min     != date.min    ) continue;
+      if (c.hour    < 24 && c.hour    != date.hour   ) continue;
+      if (c.weekday <  7 && c.weekday != date.weekday) continue;
+      if (c.day     < 31) {
         uint8_t mlast = month_len() - 1;
-        uint8_t day = MIN(mlast, crons[i].day);
-        if (crons[i].weekday < 7) {
+        uint8_t day = MIN(mlast, c.day);
+        if (c.weekday < 7) {
           uint8_t min, max;
           if (day <= 3) {
             min = 0;
@@ -41,14 +43,18 @@ void cron()
           if (!(min <= date.day && date.day <= max)) continue;
         } else if (day != date.day) continue;
       }
-      if (crons[i].month   < 12 && crons[i].month   != date.month  ) continue;
+      if (c.month   < 12 && c.month   != date.month  ) continue;
       
-      crons[i].func(crons[i].arg);
+      c.func(c.arg);
       
-      if (crons[i].repeat) {
-        if (crons[i].repeat != (uint8_t)-1) crons[i].repeat--;
+      if (c.repeat) {
+        if (c.repeat != (uint8_t)-1) {
+          c.repeat--;
+          CONFIG_SET(crons[i].repeat, c.repeat);
+        }
       } else {
-        crons[i].func = 0;
+        c.func = 0;
+        CONFIG_SET(crons[i].func, c.func);
       }
     }
   }

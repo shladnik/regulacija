@@ -146,8 +146,7 @@ def compile(sources, name):
   
   # Compile
   objn = name + ".obj"
-  so = open("stdout", "w")
-  c = subprocess.Popen(base_cmd + list(sources) + ["-o", objn], stdout = so)
+  c = subprocess.Popen(base_cmd + list(sources) + ["-o", objn])
   c.communicate()
   if c.returncode: return c.returncode
   
