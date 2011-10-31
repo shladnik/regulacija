@@ -15,7 +15,7 @@ def htmlInput( inputId, inputType, inputLabel ):
 
 	htmlstr = '<p>\n'
 	htmlstr += '\t<label>' + inputLabel
-	htmlstr += '<input id="' + inputId + '" type="' + inputType + '" />'
+	htmlstr += '<input id="' + inputId + '" name="' + inputId + '" type="' + inputType + '" />'
 	htmlstr += '</label>\n'
 	htmlstr += '</p>\n'
 	
@@ -26,7 +26,7 @@ def htmlSelect( inputId, options, inputLabel ):
 
 	htmlstr = '<p>\n'
 	htmlstr += '\t<label>' + inputLabel + '\n'
-	htmlstr += '\t\t<select id="' + inputId + '">\n'
+	htmlstr += '\t\t<select id="' + inputId + '" name="' + inputId + '">\n'
 	
 	for opt in options:
 		htmlstr += '\t\t\t<option value="' + opt + '">' + opt + '</option>\n'	
