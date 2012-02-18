@@ -80,8 +80,8 @@ def receive(timeout):
   with access.lock:
     pac_len = 1
     rx_nr(pac_len, timeout)
-    write   = (rx_bytes[0] >> 7) & 0x1
-    adr_len = rx_bytes[0] & 0x7f
+    write   = (rx_bytes[0] & 0x80) >> 7
+    adr_len = (rx_bytes[0] & 0x7f) >> 0
     if adr_len > 2: raise Exception("Address too long")
 
     pac_len += adr_len
@@ -136,7 +136,7 @@ def access(write, adr, dat, rty = 2):
   if write: max_len = max_write_len
   else:     max_len = 0xff
 
-  if len(dat) == 0: raise Exception()
+  if len(dat) == 0: raise Exception("Data length zero")
   adr &= 0xffff
   
   with access.lock:
@@ -151,14 +151,13 @@ def access(write, adr, dat, rty = 2):
       except Exception as inst:
         # clear things up
         reset()
-        global rx_bytes
-        rx_bytes = bytearray()
-        print("Protocol error:", type(inst), inst)
+        print("Protocol error:", type(inst), inst, rx_bytes)
+        del rx_bytes[0:]
         if rty:
           rty -= 1
           send(write, adr, dat[0:max_len])
         else:
-          raise inst
+          raise
 
     if len(dat) > max_len:
       pac[2].extend(access(write, adr + max_len, dat[max_len:]))
