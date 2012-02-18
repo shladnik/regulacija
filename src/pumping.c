@@ -58,20 +58,39 @@ void pumping_loop()
   temp_t t_stable_s_t = tab[3];
   temp_t t_collector  = tab[4];
 
-  temp_t diff_on       LAZY(TEMP(5));
-  temp_t diff_off      LAZY(TEMP(2));
-  temp_t diff          LAZY(t_house_s_t - t_stable_s_t);
-  bool diff_h2s        LAZY( LAZY_GET(diff) >= LAZY_GET(diff_on) || (pumping_state == PUMPING_H2S &&  LAZY_GET(diff) >= LAZY_GET(diff_off)));
-  bool diff_s2h        LAZY(-LAZY_GET(diff) >= LAZY_GET(diff_on) || (pumping_state == PUMPING_S2H && -LAZY_GET(diff) >= LAZY_GET(diff_off)));
-  temp_t min_house_s_b LAZY(TEMP(55));
-  bool furnace         LAZY(relay_get(RELAY_PUMP_FURNACE) && t_house_s_b >= LAZY_GET(min_house_s_b));
-  bool collector       LAZY(t_collector > MIN(t_house_s_b, t_stable_s_b));
-  bool milking_time    LAZY(0); // TODO
-  bool h2s             LAZY( LAZY_GET(milking_time) && LAZY_GET(diff_h2s));
-  bool s2h             LAZY(!LAZY_GET(milking_time) && LAZY_GET(diff_s2h));
+  temp_t diff_on       () { return TEMP(5); }
+  temp_t diff_off      () { return TEMP(2); }
+  temp_t diff          () { return t_house_s_t - t_stable_s_t; }
+  bool diff_h2s        () { return  diff() >= diff_on() || (pumping_state == PUMPING_H2S &&  diff() >= diff_off()); }
+  bool diff_s2h        () { return -diff() >= diff_on() || (pumping_state == PUMPING_S2H && -diff() >= diff_off()); }
+  temp_t min_house_s_b () { return TEMP(55); }
+  bool furnace         () { return relay_get(RELAY_PUMP_FURNACE) && t_house_s_b >= min_house_s_b(); }
+  bool collector       () { return t_collector > MIN(t_house_s_b, t_stable_s_b) && t_house_s_b < t_stable_s_b; }
+  date_t mms = (date_t){ 0, 0,  4, -1, -1, -1, -1 };
+  date_t mme = (date_t){ 0, 0,  8, -1, -1, -1, -1 };
+  date_t mes = (date_t){ 0, 0, 16, -1, -1, -1, -1 };
+  date_t mee = (date_t){ 0, 0, 20, -1, -1, -1, -1 };
+  bool milking_time    () { return (timecmp_lt(mms, date) && timecmp_ge(mme, date)) || (timecmp_lt(mes, date) && timecmp_ge(mee, date)); }
+  //bool milking_time    () { return 1; }
+  bool h2s             () { return  milking_time() && diff_h2s(); }
+  bool s2h             () { return !milking_time() && diff_s2h(); }
+
+  DBG static bool   d_mms          ; d_mms           = timecmp_lt(mms, date);
+  DBG static bool   d_mme          ; d_mme           = timecmp_ge(mme, date);
+  DBG static temp_t d_diff_on      ; d_diff_on       = diff_on      ();
+  DBG static temp_t d_diff_off     ; d_diff_off      = diff_off     ();
+  DBG static temp_t d_diff         ; d_diff          = diff         ();
+  DBG static bool   d_diff_h2s     ; d_diff_h2s      = diff_h2s     ();
+  DBG static bool   d_diff_s2h     ; d_diff_s2h      = diff_s2h     ();
+  DBG static temp_t d_min_house_s_b; d_min_house_s_b = min_house_s_b();
+  DBG static bool   d_furnace      ; d_furnace       = furnace      ();
+  DBG static bool   d_collector    ; d_collector     = collector    ();
+  DBG static bool   d_milking_time ; d_milking_time  = milking_time ();
+  DBG static bool   d_h2s          ; d_h2s           = h2s          ();
+  DBG static bool   d_s2h          ; d_s2h           = s2h          ();
   
-  if      (LAZY_GET(furnace)   || LAZY_GET(h2s)) pumping_state = PUMPING_H2S;
-  else if (LAZY_GET(collector) || LAZY_GET(s2h)) pumping_state = PUMPING_S2H;
+  if      (furnace()   || h2s()) pumping_state = PUMPING_H2S;
+  else if (collector() || s2h()) pumping_state = PUMPING_S2H;
   else                                           pumping_state = PUMPING_IDLE;
   
   switch (pumping_state) {
