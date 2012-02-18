@@ -25,7 +25,6 @@ int main()
   valve_init();
 
   lcd_init();
-  lprintf(1, 5, "Zaganjam...");
 
   loops_start();
 
