@@ -52,7 +52,7 @@ uint16_t getput_word()
   return dat;
 }
 
-void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
+void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len, uint8_t check)
 {
   uintptr_t start = adr;
   uintptr_t end   = adr + len;
@@ -97,9 +97,9 @@ void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
   for (; i < e; i += 2) boot_page_fill(i, pgm_read_word(i));
   
   if (change) {
-    boot_page_erase(adr);
+    if (boot_page_erase_checked(adr, check) != 0) restart();
     boot_spm_busy_wait();
-    boot_page_write(adr);
+    if (boot_page_write_checked(adr, check) != 0) restart();
     boot_spm_busy_wait();
   }
   boot_rww_enable();
@@ -108,6 +108,8 @@ void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
 __attribute__((naked))
 int main()
 {
+  volatile uint8_t check = BOOT_SPM_CHECK_VAL;
+
   if (UCSRB & (1 << TXEN)) {
     /* Seems like we jumped here from firmware.
      * We will not reinitialize UART to keep the
@@ -168,10 +170,10 @@ int main()
       uint8_t buf_jmp [len];
       for (uintptr_t i = 0; i < len; i++)
         buf_jmp[i] = pgm_read_byte(&__jmp_load_start + i);
-      flash_write_block(&buf_jmp[0], 0, len);
+      flash_write_block(&buf_jmp[0], 0, len, check);
     }
     
-    flash_write_block(&buf[0], page_adr, len);
+    flash_write_block(&buf[0], page_adr, len, check);
     
     len = SPM_PAGESIZE;
     buf_ptr = &buf[SPM_PAGESIZE];
