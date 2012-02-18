@@ -14,27 +14,30 @@ import tools
 import html_tools
 import packer
 
+def sync_time():
+  while 1:
+    try:
+      gumi = gum.Gum()
+      gumi.set_time()
+    except:
+      time.sleep(1)
+    else:
+      time.sleep(1800)
+
+sync_time_thread = threading.Thread(target = sync_time)
+sync_time_thread.daemon = True
+sync_time_thread.start()
+
+
+
+
+
+
+
+
+
 el = xml.etree.ElementTree.Element
 
-
-#if len(sys.argv) > 1:
-#  baud = int(sys.argv[1])
-#else:
-#  baud = None
-#
-#if len(sys.argv) > 2:
-#  meta = sys.argv[2]
-#else:
-#  meta = None
-
-
-
-def diagonal_flip(table):
-  h = len(table)
-  tab = [ [] for i in table[0] ]
-  for i in range(h):
-    tab[i] = [ row[i] for row in table ]
-  return tab
 
 
 def build_table(data):
@@ -451,26 +454,7 @@ class Regulation(object):
 
 
 
-
-  #config._cp_config = devel._cp_config = {
-  #  'tools.auth_digest.on'      : True,
-  #  'tools.auth_digest.realm'   : 'home',
-  #  'tools.auth_digest.get_ha1' : cherrypy.lib.auth_digest.get_ha1_file_htdigest('security/htdigest'),
-  #  'tools.auth_digest.key'     : 'a565c27146791cfb',
-  #}
-
-
-#def to_https():
-#  url = cherrypy.url()
-#  print(url)
-#  if url[0:4] == 'http' and url[4] != 's':
-#    url = url[0:4] + 's' + url[4:]
-#    print("Redirect to", url)
-#    raise cherrypy.HTTPRedirect(url)
-#
-#cherrypy.tools.to_https = cherrypy._cptools.HandlerTool(to_https)
-
-cherrypy.quickstart(Regulation(), '', {
+config = {
   'global' : {
     'engine.autoreload_on'      : False,
     #'server.socket_host'        : 'stefuc.homeip.net',
@@ -490,5 +474,13 @@ cherrypy.quickstart(Regulation(), '', {
     'tools.auth_digest.get_ha1' : cherrypy.lib.auth_digest.get_ha1_file_htdigest('security/htdigest'),
     'tools.auth_digest.key'     : 'a565c27146791cfb',
   },
-})
+}
 
+cherrypy.config.update(config)
+cherrypy.tree.mount(root = Regulation(), config = config)
+cherrypy.engine.start()
+
+#s1 = cherrypy._cpserver.Server(cherrypy.engine, HTTPServer(host='0.0.0.0', port=8000))
+#s1 = cherrypy.process.servers.ServerAdapter(cherrypy.engine, cherrypy._cpserver.Server())
+#s1.subscribe()
+#cherrypy.engine.start()
