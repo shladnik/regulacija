@@ -479,8 +479,3 @@ config = {
 cherrypy.config.update(config)
 cherrypy.tree.mount(root = Regulation(), config = config)
 cherrypy.engine.start()
-
-#s1 = cherrypy._cpserver.Server(cherrypy.engine, HTTPServer(host='0.0.0.0', port=8000))
-#s1 = cherrypy.process.servers.ServerAdapter(cherrypy.engine, cherrypy._cpserver.Server())
-#s1.subscribe()
-#cherrypy.engine.start()
