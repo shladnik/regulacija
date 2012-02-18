@@ -10,7 +10,8 @@ MEMORY
 SECTIONS
 {
   __spm_blocksize = 128 ;
-  __bootloader_adr = 32K - 1K;
+  __flash_size = 32K ;
+  __bootloader_adr = __flash_size - 1K;
 
   /* Read-only sections, merged into text segment: */
   .hash          : { *(.hash)		}
