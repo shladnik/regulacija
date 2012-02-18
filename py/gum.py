@@ -35,7 +35,7 @@ class Gum():
       ports = filter(lambda x: x != port, ports)
       ports = tuple([port]) + tuple(ports)
     ports = tuple(filter(os.path.exists, ports))
-    if not port: raise Exception("No port found!")
+    if not ports: raise Exception("No port found!")
     
     rates = ( 230400, 115200, 9600 )
     #rates = rates + tuple(reversed(sorted(tuple(set(uart.uart.BAUDRATES) - set(rates)))))
@@ -121,14 +121,15 @@ class Gum():
 
   def __del__(self):
     with Gum.icnt_lock:
-      Gum.icnt -= 1
-      if not Gum.icnt:
-        to_pickle = { 'port' : uart.uart.port,
-                      'rate' : uart.uart.baudrate,
-                      'meta' : self.meta,
-                    }
-        pickle.dump(to_pickle, open("gum.cache", 'wb'))
-        uart.uart.close()
+      if hasattr(self, 'meta'):
+        Gum.icnt -= 1
+        if not Gum.icnt:
+          to_pickle = { 'port' : uart.uart.port,
+                        'rate' : uart.uart.baudrate,
+                        'meta' : self.meta,
+                      }
+          pickle.dump(to_pickle, open("gum.cache", 'wb'))
+          uart.uart.close()
 
   #
   # R/W functions
