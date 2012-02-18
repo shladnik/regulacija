@@ -32,10 +32,9 @@ defines = {
 }
 
 cflags = (
-#"-g3",
-#"-ggdb3",
-#"-gstabs+",
-#"-gdwarf-2",
+#"-g3",   # gstabs+
+"-ggdb3", # dwarf
+#"-feliminate-dwarf2-dups",
 "-Os",
 "-mmcu=atmega32",
 "-std=gnu99",
@@ -54,7 +53,7 @@ cflags = (
 #"-nostartfiles",
 
 
-"-Wl,--relax",
+#"-Wl,--relax", #TODO retry - that used to work but having segmentation faults now (8.12.2011)
 
 # throw out unneeded code - this seems to have no effect when -combine -fwhole-program is used
 #"-fdata-sections",
@@ -71,6 +70,7 @@ cflags = (
 # 
 includes = (
 # STDLIB
+"stdint.h",
 "stdlib.h",
 "stdio.h",
 "string.h",
@@ -121,6 +121,7 @@ sources_fw = (
 "src/exexec.c",
 "src/config.c",
 "src/flash.c",
+"src/time.c",
 )
 
 sources_bootloader = (
@@ -131,7 +132,10 @@ sources_bootloader = (
 def compile(sources, name):
   # Common part
   linker_script = "ld_" + name + ".x"
-  base_cmd = [ "avr-gcc", "-T", linker_script, "-I", "src/auto" ]
+  base_cmd = [ "avr-gcc",
+               "-T", linker_script,
+               "-I", "src/auto",
+             ]
 
   autoincludes = []
   for i in sources:
@@ -157,8 +161,8 @@ def compile(sources, name):
   #if s.returncode: return s.returncode
   
   ## Pre-assembly stage
-  #sn   = "ss"
-  #s = subprocess.Popen(base_cmd + list(SOURCes) + ["-S", "-o", sn])
+  #sn   = "ss.s"
+  #s = subprocess.Popen(base_cmd + list(sources) + ["-S", "-o", sn])
   #s.communicate()
   #if s.returncode: return s.returncode
 
@@ -174,7 +178,14 @@ def compile(sources, name):
   macros = macrodump.macrodump(deftmp)
   os.remove(deftmp)
 
+  #subprocess.Popen(["avr-objdump", "-g", name + ".obj",], stdout = open("test_c_dump.c", 'w')).communicate()
   subprocess.Popen(["avr-size", "-A", name + ".obj"]).communicate()
+
+  # obj -> dbg
+  #binn = name + ".dbg"
+  #b = subprocess.Popen(["avr-objcopy", "--only-keep-debug", objn, binn]) 
+  #b.communicate()
+  #b = subprocess.Popen(["avr-objcopy", "-j", ".stab", "-j", ".stabstr", objn, "fw.stab"]).communicate() 
 
   # obj -> bin
   binn = name + ".bin"
@@ -253,6 +264,8 @@ if any(recompile.values()):
   meta.close()
 
 packer.pack(cmptime)
+
+#TODO use mechanize to send it ???
 
 #encodedstring = base64.encodebytes(bytes(b"servis:t0r0nt0"))[:-1]
 #auth = "Basic %s" % encodedstring
