@@ -20,14 +20,21 @@ bool meta_range(uintptr_t adr, uintptr_t len)
 
 bool writeallow_range(uintptr_t adr, uintptr_t len)
 {
-  (void)len;
   extern uint8_t __fw_end;
-  return adr > ((uintptr_t)&__fw_end | (SPM_PAGESIZE - 1));
+  uintptr_t start = (uintptr_t)&__fw_end | (SPM_PAGESIZE - 1);
+  extern uint8_t __flash_size;
+  uintptr_t first = adr;
+  uintptr_t last  = adr + len - 1;
+  return start <= first && first < (uintptr_t)&__flash_size &&
+         start <= last  && last  < (uintptr_t)&__flash_size;
 }
 
 __attribute__((section(".flash_write")))
 void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
 {
+  volatile uint8_t check;
+  check = BOOT_SPM_CHECK_VAL;
+
   if (config_range(adr, len) || writeallow_range(adr, len)) {
     uintptr_t start = adr;
     uintptr_t end   = adr + len;
@@ -71,9 +78,9 @@ void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len)
       for (; i < e; i += 2) boot_page_fill(i, pgm_read_word(i));
       
       if (change) {
-        boot_page_erase(adr);
+        assert(boot_page_erase_checked(adr, check) == 0);
         boot_spm_busy_wait();
-        boot_page_write(adr);
+        assert(boot_page_write_checked(adr, check) == 0);
         boot_spm_busy_wait();
       }
       boot_rww_enable();
