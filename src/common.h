@@ -26,4 +26,8 @@ typedef void (*func_t)();
 #define LAZY_GET(name) (name)
 #endif
 
+#define BOOT_SPM_CHECK_VAL 0xa5
+uint8_t boot_page_erase_checked (uint16_t address, uint8_t check);
+uint8_t boot_page_write_checked (uint16_t address, uint8_t check);
+
 #endif
