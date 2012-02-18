@@ -30,7 +30,7 @@ typedef struct {
 
 extern date_t date;
 
-void daylight_saving(uint16_t hours);
+void daylight_saving(int8_t hours);
 uint8_t month_len();
 void clock_init();
 void clock_loop();

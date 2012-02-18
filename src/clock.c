@@ -57,7 +57,7 @@ uint8_t month_len()
   return len;
 }
 
-void daylight_saving(uint16_t hours)
+void daylight_saving(int8_t hours)
 {
   date.hour += (int8_t)hours;
 }

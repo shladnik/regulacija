@@ -11,9 +11,11 @@ typedef struct {
   uint8_t  repeat;
 } cron_t;
 
+typedef void (*cron_func_t)(uint16_t);
+
 CONFIG cron_t crons [MAX_CRONS] = {
-{  0,  2,  6, 30,  2, daylight_saving, +1, -1 },
-{  0,  3,  6, 30,  9, daylight_saving, -1, -1 },
+{  0,  2,  6, 30,  2, (cron_func_t)daylight_saving, +1, -1 },
+{  0,  3,  6, 30,  9, (cron_func_t)daylight_saving, -1, -1 }, // TODO this should happen only once per year (or day or whatever) - currently it will loop!
 };
 
 void cron()
