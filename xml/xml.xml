@@ -76,7 +76,7 @@
 </valve_list>
 
 <config_list>
-  <radiator_goal format="s7.8" reset="10.0">
+  <radiator_goal format="s7.8" reset="-1.0">
     Zeljena temperatura dviznega voda. Vrednost manjsa od 0 pomeni avtomatsko regulacijo.
   </radiator_goal>
   <collector_diff_on format="s7.8" reset="10.0">
