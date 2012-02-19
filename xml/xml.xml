@@ -38,29 +38,29 @@
 </ds18b20_list>
 
 <relay_list>
-  <relay pin="PC4" cname="VALVE_SH0_DIR"     >
+  <relay pin="PC4" neg="0" cname="VALVE_SH0_DIR"     >
   </relay>
-  <relay pin="PC5" cname="VALVE_SH0_EN"      >
+  <relay pin="PC5" neg="0" cname="VALVE_SH0_EN"      >
   </relay>
-  <relay pin="PB1" cname="VALVE_SH1_DIR"     >
+  <relay pin="PB1" neg="0" cname="VALVE_SH1_DIR"     >
   </relay>
-  <relay pin="PB0" cname="VALVE_SH1_EN"      >
+  <relay pin="PB0" neg="0" cname="VALVE_SH1_EN"      >
   </relay>
-  <relay pin="PC1" cname="VALVE_RADIATOR_DIR">
+  <relay pin="PC1" neg="0" cname="VALVE_RADIATOR_DIR">
   </relay>
-  <relay pin="PC0" cname="VALVE_RADIATOR_EN" >
+  <relay pin="PC0" neg="1" cname="VALVE_RADIATOR_EN" >
   </relay>
-  <relay pin="PC3" cname="VALVE_FURNACE_DIR" >
+  <relay pin="PC3" neg="0" cname="VALVE_FURNACE_DIR" >
   </relay>
-  <relay pin="PC2" cname="VALVE_FURNACE_EN"  >
+  <relay pin="PC2" neg="1" cname="VALVE_FURNACE_EN"  >
   </relay>
-  <relay pin="PD5" cname="PUMP_SH"           >
+  <relay pin="PD5" neg="0" cname="PUMP_SH"           >
   </relay>
-  <relay pin="PD4" cname="PUMP_RADIATOR"     >
+  <relay pin="PD4" neg="0" cname="PUMP_RADIATOR"     >
   </relay>
-  <relay pin="PD7" cname="PUMP_FURNACE"      >
+  <relay pin="PD7" neg="0" cname="PUMP_FURNACE"      >
   </relay>
-  <relay pin="PD6" cname="PUMP_COLLECTOR"    >
+  <relay pin="PD6" neg="1" cname="PUMP_COLLECTOR"    >
   </relay>
 </relay_list>
 

@@ -22,10 +22,11 @@ def relay_list(element, c, h):
   cname_base = element.tag[0:-4].upper()
   
   for d in element.findall(name):
-    pin = d.attrib['pin']
+    pin  = d.attrib['pin']
     port = bytes(pin[1], 'utf8')[0] - bytes('A', 'utf8')[0]
     bit  = int(pin[2:])
-    c.write("{ " + str(port) + ", 1 << " + str(bit) + " },\n")
+    neg  = int(d.attrib['neg'])
+    c.write("{ " + str(port) + ", 1 << " + str(bit) + ",  " + str(neg) + "},\n")
     
     h.write(cname_base + d.attrib['cname'] + ',\n')
 
