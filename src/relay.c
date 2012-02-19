@@ -3,28 +3,12 @@ typedef struct {
   const uint8_t mask;
 } relay_t;
 
-#if 0
-#define PORT(i) (relay_tab[i].port)
-#define MASK(i) (relay_tab[i].mask)
-
-static const relay_t const relay_tab [] = {
-#else
 #define PORT(i) (pgm_read_byte(&relay_tab[i].port))
 #define MASK(i) (pgm_read_byte(&relay_tab[i].mask))
 
 static const relay_t const relay_tab [] PROGMEM = {
-#endif
 #include "relay_list.c"
 };
-
-#if 0
-inline void relay_on(RELAY i)     __attribute__((always_inline));
-inline void relay_off(RELAY i)    __attribute__((always_inline));
-inline bool relay_get(RELAY i)    __attribute__((always_inline));
-inline void relay_toggle(RELAY i) __attribute__((always_inline));
-inline void relay_off_all()       __attribute__((always_inline));
-inline void relay_on_all()        __attribute__((always_inline));
-#endif
 
 void relay_off(RELAY i)
 {

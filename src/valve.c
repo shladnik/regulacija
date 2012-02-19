@@ -1,4 +1,3 @@
-
 typedef struct {
   const uint8_t relay_en;
   const uint8_t relay_dir;
@@ -10,26 +9,14 @@ typedef struct {
   timer_t last_update;
 } valve_t;
 
+#define RELAY_DIR(i) (pgm_read_byte(&valve_relay[i].relay_dir))
+#define RELAY_EN(i)  (pgm_read_byte(&valve_relay[i].relay_en ))
+
 static const valve_relay_t valve_relay [] PROGMEM = {
 #include "valve_list.c"
 };
 
 static valve_t valve_tab [VALVE_NR];
-
-#if 0
-inline void valve_open (VALVE i) __attribute__((always_inline));
-inline void valve_close(VALVE i) __attribute__((always_inline));
-inline void valve_stop (VALVE i) __attribute__((always_inline));
-inline void valve_refresh(VALVE i) __attribute__((always_inline));
-inline void valve_stop_cb(void * arg) __attribute__((always_inline));
-inline void valve_control(VALVE i) __attribute__((always_inline));
-
-inline void valve_open_for(VALVE i, valve_state_t amount)  __attribute__((always_inline));
-inline void valve_close_for(VALVE i, valve_state_t amount) __attribute__((always_inline));
-inline valve_state_t valve_get(VALVE i)                    __attribute__((always_inline));
-inline bool valve_opened(VALVE i)                          __attribute__((always_inline));
-inline bool valve_closed(VALVE i)                          __attribute__((always_inline));
-#endif
 
 void valve_init()
 {
@@ -39,30 +26,30 @@ void valve_init()
 
 void valve_open(VALVE i)
 {
-  relay_on (pgm_read_byte(&valve_relay[i].relay_dir));
-  relay_on (pgm_read_byte(&valve_relay[i].relay_en ));
+  relay_on (RELAY_DIR(i));
+  relay_on (RELAY_EN (i));
 }
 
 void valve_close(VALVE i)
 {
-  relay_off(pgm_read_byte(&valve_relay[i].relay_dir));
-  relay_on (pgm_read_byte(&valve_relay[i].relay_en ));
+  relay_off(RELAY_DIR(i));
+  relay_on (RELAY_EN (i));
 }
 
 void valve_stop(VALVE i)
 {
-  relay_off(pgm_read_byte(&valve_relay[i].relay_en ));
-  relay_off(pgm_read_byte(&valve_relay[i].relay_dir));
+  relay_off(RELAY_EN (i));
+  relay_off(RELAY_DIR(i));
 }
 
 void valve_refresh(VALVE i)
 {
   timer_t now = timer_now();
 
-  if (relay_get(pgm_read_byte(&valve_relay[i].relay_en))) {
+  if (relay_get(RELAY_EN(i))) {
     valve_state_t amount = now - valve_tab[i].last_update;
 
-    if (relay_get(pgm_read_byte(&valve_relay[i].relay_dir)))
+    if (relay_get(RELAY_DIR(i)))
       valve_tab[i].state = VALVE_STATE_MAX - valve_tab[i].state < amount ? VALVE_STATE_MAX : valve_tab[i].state + amount;
     else
       valve_tab[i].state =                   valve_tab[i].state < amount ? VALVE_STATE_MIN : valve_tab[i].state - amount;
@@ -108,21 +95,18 @@ void valve_close_for(VALVE i, valve_state_t amount)
   valve_control(i);
 }
 
-__attribute__((used))
-valve_state_t valve_get(VALVE i)
+USED valve_state_t valve_get(VALVE i)
 {
   valve_refresh(i);
   return valve_tab[i].state;
 }
 
-__attribute__((used))
-bool valve_opened(VALVE i)
+USED bool valve_opened(VALVE i)
 {
   return valve_tab[i].state > (VALVE_STATE_MAX - VALVE_MIN_MOVE);
 }
 
-__attribute__((used))
-bool valve_closed(VALVE i)
+USED bool valve_closed(VALVE i)
 {
   return valve_tab[i].state < (VALVE_STATE_MIN + VALVE_MIN_MOVE);
 }
