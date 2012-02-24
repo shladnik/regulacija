@@ -1,4 +1,43 @@
+#if 0
+/*
+ *
+ * 10, 80
+ */
+void furnace_loop()
+{
+  enum {
+    IN,
+    OUT,
+    NR,
+  };
 
+  temp_t tab [NR] = {
+    DS18B20_FURNACE_B,
+    DS18B20_FURNACE_T,
+  };
+
+  ds18b20_get_temp_tab(NR, RESOLUTION_9, 7, tab);
+  temp_t diff = tab[OUT] - tab[IN];
+
+  if (tab[OUT] > TEMP(85)) {
+    valve_open(VALVE_FURNACE);
+    relay_on(RELAY_PUMP_FURNACE);
+  } else {
+    if (diff > TEMP(10))
+      valve_close(VALVE_FURNACE);
+    else
+      valve_open (VALVE_FURNACE);
+
+    if (diff > TEMP(20))
+      relay_on (RELAY_PUMP_FURNACE);
+    else
+      relay_off(RELAY_PUMP_FURNACE);
+  }
+}
+
+//loop_t furnace_loop = { furnace_loop, };
+
+#else
 void furnace_loop()
 {
   temp_t t_furnace_t = ds18b20_get_temp(DS18B20_FURNACE_T, RESOLUTION_9, 7);
@@ -30,12 +69,12 @@ void furnace_loop()
   temp_t diff = dir ? goal - curr : curr - goal;
 
 #if 0
-  valve_state_t amount = (VALVE_STATE_MAX * (uint64_t)diff) >> (8 + 6);
+  valve_state_t amount = (VALVE_STATE_MAX * (uint32_t)diff) >> (8 + 6);
 #else
-  valve_state_t amount = (VALVE_STATE_MAX * (uint64_t)diff) >> (8 + 6);
+  valve_state_t amount = (VALVE_STATE_MAX * (uint32_t)diff) >> (8 + 6);
 #endif
 
-  if (dir) valve_open_for (VALVE_FURNACE, amount);
-  else     valve_close_for(VALVE_FURNACE, amount);
+  if (dir) valve_close_for(VALVE_FURNACE, amount);
+  else     valve_open_for (VALVE_FURNACE, amount);
 }
-
+#endif

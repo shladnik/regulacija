@@ -26,7 +26,7 @@ def relay_list(element, c, h):
     port = bytes(pin[1], 'utf8')[0] - bytes('A', 'utf8')[0]
     bit  = int(pin[2:])
     neg  = int(d.attrib['neg'])
-    c.write("{ " + str(port) + ", 1 << " + str(bit) + ",  " + str(neg) + "},\n")
+    c.write("{ " + str(port) + ", 1 << " + str(bit) + ", " + str(neg) + " },\n")
     
     h.write(cname_base + d.attrib['cname'] + ',\n')
 
@@ -38,7 +38,8 @@ def valve_list(element, c, h):
   
   for d in element.findall(name):
     name = d.attrib['cname']
-    c.write("{ RELAY_VALVE_" + name + "_EN, RELAY_VALVE_" + name + "_DIR },\n")
+    neg  = int(d.attrib['neg'])
+    c.write("{ RELAY_VALVE_" + name + "_EN, RELAY_VALVE_" + name + "_DIR, " + str(neg) + " },\n")
     
     h.write(cname_base + d.attrib['cname'] + ',\n')
 

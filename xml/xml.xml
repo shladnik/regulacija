@@ -65,13 +65,13 @@
 </relay_list>
 
 <valve_list>
-  <valve cname="SH0"     >
+  <valve neg="0" cname="SH0"     >
   </valve>
-  <valve cname="SH1"     >
+  <valve neg="0" cname="SH1"     >
   </valve>
-  <valve cname="RADIATOR">
+  <valve neg="1" cname="RADIATOR">
   </valve>
-  <valve cname="FURNACE" >
+  <valve neg="1" cname="FURNACE" >
   </valve>
 </valve_list>
 

@@ -16,12 +16,12 @@ void radiator_loop()
   bool dir = curr > goal;
   temp_t diff = dir ? curr - goal : goal - curr;
 
-  valve_state_t amount = (VALVE_STATE_MAX * (uint64_t)diff) >> (8 + 6);
+  valve_state_t amount = (VALVE_STATE_MAX * (uint32_t)diff) >> (8 + 6);
   
-  if (dir) valve_open_for (VALVE_RADIATOR, amount);
-  else     valve_close_for(VALVE_RADIATOR, amount);
+  if (dir) valve_close_for(VALVE_RADIATOR, amount);
+  else     valve_open_for (VALVE_RADIATOR, amount);
   
-  if (valve_opened(VALVE_RADIATOR))
+  if (valve_closed(VALVE_RADIATOR))
     relay_off(RELAY_PUMP_RADIATOR);
   else
     relay_on (RELAY_PUMP_RADIATOR);
@@ -45,11 +45,11 @@ void radiator_loop_new()
   goal += (uint32_t)(tab[0] - tab[1]) * CONFIG_GET(heating_f) / 0x10;
   goal = MIN(goal, tab[2] - storage_off);
 
-  valve_state_t amount = TIMER_S(6);
-  if (goal > tab[1]) valve_close_for(VALVE_RADIATOR, amount);
-  else               valve_open_for (VALVE_RADIATOR, amount);
+  valve_state_t amount = VALVE_STATE_MAX * 5 / 100;
+  if (goal > tab[1]) valve_open_for (VALVE_RADIATOR, amount);
+  else               valve_close_for(VALVE_RADIATOR, amount);
   
-  if (valve_opened(VALVE_RADIATOR))
+  if (valve_closed(VALVE_RADIATOR))
     relay_off(RELAY_PUMP_RADIATOR);
   else
     relay_on (RELAY_PUMP_RADIATOR);

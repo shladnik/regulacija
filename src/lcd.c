@@ -161,11 +161,25 @@ void lcd_loop()
   lprintf(3, 16, "%c",  relay_get(RELAY_PUMP_RADIATOR)  ? '*' : ' ');
   lprintf(3, 18, "%c",  valve_opened(VALVE_RADIATOR)    ? '|' : (valve_closed(VALVE_RADIATOR) ? '-' : '/'));
 #else
+  char sf [] = " ||";
+  valve_state_t vf = valve_get(VALVE_FURNACE);
+  if (VALVE_STATE_MIN < vf && vf < VALVE_STATE_MAX)
+    sprintf(sf, "%02d%%", vf);
+  else if (vf)
+    sf[1] = '-';
+  
+  char sr [] = " | ";
+  valve_state_t vr = valve_get(VALVE_RADIATOR);
+  if (VALVE_STATE_MIN < vr && vr < VALVE_STATE_MAX)
+    sprintf(sr, "%02d%%", vr);
+  else if (vr)
+    sr[1] = '-';
+
   lprintf(0, 0,
     "His%cHle|Pec|Kol|Rad "
     "%3d|%3d|%3d|%3d|%3d "
     "%3d|%3d|%3d|   |%3d "
-    "%3d|   |%c %c|%c  |%c %c ",
+    "%3d|   |%c%03s%c  |%c%03s",
       pumping_state == PUMPING_S2H ? '<' : (pumping_state == PUMPING_H2S ? '>' : '|'),
       
       temp_tab_int[DS18B20_HOUSE_0   ],
@@ -181,10 +195,10 @@ void lcd_loop()
 
       temp_tab_int[DS18B20_HOUSE_S_B ],
       relay_get(RELAY_PUMP_FURNACE)   ? '*' : ' ',
-      valve_opened(VALVE_FURNACE)     ? '|' : (valve_closed(VALVE_FURNACE)  ? '-' : '/'),
+      sf,
       relay_get(RELAY_PUMP_COLLECTOR) ? '*' : ' ',
       relay_get(RELAY_PUMP_RADIATOR)  ? '*' : ' ',
-      valve_opened(VALVE_RADIATOR)    ? '|' : (valve_closed(VALVE_RADIATOR) ? '-' : '/'));
+      sr);
 #endif
 }
 
