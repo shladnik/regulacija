@@ -263,17 +263,25 @@ temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
 #endif
 }
 
-USED void ds18b20_get_temp_tab(DS18B20 nr, RESOLUTION r, uint8_t rty, temp_t * tab)
+USED void ds18b20_get_temp_tab(volatile DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp_t * p_tab)
 {
-  /* static */ volatile uint8_t try; try = 0;
-  /* static */ volatile timer_t rst_time; rst_time = TIMER_MS(10);
-  /* static */ volatile uint8_t cnt; cnt = nr;
+  /* parameters and variables used has to be vloatile cause of setjmp/longjmp */
+  volatile DS18B20    nr       = p_nr;
+  volatile RESOLUTION v_r      = p_r;
+  volatile uint8_t    v_rty    = p_rty;
+  volatile temp_t *   tab      = p_tab;
+  volatile uint8_t    try      = 0;
+  volatile timer_t    rst_time = TIMER_MS(10);
+  /* setjmp */
   jmp_buf tmp_eh;
-
   assert(ds18b20_err_handler == 0);
   ds18b20_err_handler = &tmp_eh;
   uint8_t errno = setjmp(tmp_eh);
-  
+  /* after setjum was called - readonly variables can be latched as non-volatile */
+  RESOLUTION r   = v_r;
+  uint8_t    rty = v_rty;
+  /* this could be further optimized by by having volatile & non-volatile versions and use it appropriate */
+
 #ifndef NDEBUG
   DBG static uint8_t ds18b20_max_rty[DS18B20_NR][2];
   if (ds18b20_max_rty[*tab][0] < try) { // *tab index is a lie here for most types of errors
@@ -285,7 +293,7 @@ USED void ds18b20_get_temp_tab(DS18B20 nr, RESOLUTION r, uint8_t rty, temp_t * t
   (void)errno;
 #endif
   
-  while (cnt) {
+  while (nr) {
     if (try <= rty) {
       if (try >= 2) {
         ds18b20_reset(rst_time);
@@ -293,12 +301,12 @@ USED void ds18b20_get_temp_tab(DS18B20 nr, RESOLUTION r, uint8_t rty, temp_t * t
       }
       try++;
     
-      for (uint8_t i = 0; i < cnt; i++) {
+      for (uint8_t i = 0; i < nr; i++) {
         DS18B20 s = tab[i];
         ds18b20_set_resolution(s, r);
       }
 
-      if (cnt >= 2) {
+      if (nr >= 2) {
         for (/*DS18B20*/ uint8_t i = 0; i < DS18B20_NR; i++) {
           if (ds18b20_tab[i].resolution > r) {
             ds18b20_set_resolution(i, RESOLUTION_9);
@@ -310,15 +318,16 @@ USED void ds18b20_get_temp_tab(DS18B20 nr, RESOLUTION r, uint8_t rty, temp_t * t
       }
       ds18b20_convert_t(tab[0]);
 
-      for (cnt = cnt; cnt > 0; cnt--) {
+      while (nr) {
         DS18B20 s = tab[0];
         tab[0] = ds18b20_read_temp(s);
         tab++;
+        nr--;
       }
     } else {
       tab[0] = TEMP_ERR;
       tab++;
-      cnt--;
+      nr--;
       try = 0;
     }
   }
