@@ -337,8 +337,9 @@ class Gum():
         
         if block:
           expected = ( 1, self.meta['symbols']['exexec_func']['adr'], bytearray([0, 0]) )
+          response = None
           try:
-            response = uart.receive(timeout = 30)
+            response = uart.receive(timeout = 15)
             if response != expected: raise Exception("Exexec response failture (expected %s, got %s)." % (str(expected), str(response)))
           except:
             if self.read_symbol("exexec_func") != 0: raise Exception("Exexec response failback failture (expected %s, got %s)." % (str(expected), str(response)))
@@ -375,11 +376,7 @@ class Gum():
   
   
   def valve_state(self, i):
-    if   self.exexec("valve_opened", [ i ])[0] & 0xff: return True
-    elif self.exexec("valve_closed", [ i ])[0] & 0xff: return False
-    else:
-      state = self.exexec("valve_get", [ i ])
-      return (state[0] << 16) + state[1]
+    return self.exexec("valve_get", [ i ])[0]
   
   def relay_get(self, i):
     return self.exexec("relay_get", [ i ])[0]

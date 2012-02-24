@@ -7,7 +7,7 @@ import time
 
 uart = serial.Serial()
 
-def get(timeout = 0.1): #1000 * 10.0/uart.baudrate):
+def get(timeout = 0.5): #1000 * 10.0/uart.baudrate):
   uart.timeout = timeout
   r = uart.read(1)
   if not r: raise Exception 
@@ -65,54 +65,58 @@ def calc_crc(bs):
     crc = crc_update(crc, b)
   return crc
 
-rx_bytes = bytearray()
-
-def rx_nr(cnt, timeout = 0):
-  while len(rx_bytes) < cnt:
-    b = int()
-    if cnt == 1:
-      b = get(timeout=timeout)
-    else:
-      b = get()
-    rx_bytes.append(b)
-
 def receive(timeout):
   with access.lock:
-    pac_len = 1
-    rx_nr(pac_len, timeout)
-    write   = (rx_bytes[0] & 0x80) >> 7
-    adr_len = (rx_bytes[0] & 0x7f) >> 0
-    if adr_len > 2: raise Exception("Address too long")
+    try:
+      rx_bytes = bytearray()
+      
+      def rx_nr(cnt, timeout = 0):
+        while len(rx_bytes) < cnt:
+          b = int()
+          if cnt == 1:
+            b = get(timeout=timeout)
+          else:
+            b = get()
+          rx_bytes.append(b)
 
-    pac_len += adr_len
-    rx_nr(pac_len)
-    cnt = 0
-    adr = 0
-    while cnt < adr_len:
-      cnt += 1
-      adr |= rx_bytes[cnt] << (8 * (adr_len - cnt))
+      pac_len = 1
+      rx_nr(pac_len, timeout)
+      write   = (rx_bytes[0] & 0x80) >> 7
+      adr_len = (rx_bytes[0] & 0x7f) >> 0
+      if adr_len > 2: raise Exception("Address too long")
 
-    pac_len += 1
-    rx_nr(pac_len)
-    dat_len = rx_bytes[adr_len+1]
-
-    if dat_len == 0: raise Exception("Data length zero")
- 
-    if write:
-      dat_start = pac_len
-      pac_len += dat_len
+      pac_len += adr_len
       rx_nr(pac_len)
-      dat = rx_bytes[dat_start:pac_len]
-    else:
-      dat = bytearray(dat_len)
+      cnt = 0
+      adr = 0
+      while cnt < adr_len:
+        cnt += 1
+        adr |= rx_bytes[cnt] << (8 * (adr_len - cnt))
 
-    pac_len += 1
-    rx_nr(pac_len)
-    if calc_crc(rx_bytes[0:pac_len]): raise Exception("CRC error")
+      pac_len += 1
+      rx_nr(pac_len)
+      dat_len = rx_bytes[adr_len+1]
 
-    for i in range(pac_len): rx_bytes.pop(0)
+      if dat_len == 0: raise Exception("Data length zero")
+ 
+      if write:
+        dat_start = pac_len
+        pac_len += dat_len
+        rx_nr(pac_len)
+        dat = rx_bytes[dat_start:pac_len]
+      else:
+        dat = bytearray(dat_len)
 
-    return (write, adr, dat)
+      pac_len += 1
+      rx_nr(pac_len)
+      if calc_crc(rx_bytes[0:pac_len]): raise Exception("CRC error")
+
+      for i in range(pac_len): rx_bytes.pop(0)
+
+      return (write, adr, dat)
+    except:
+      print("Received so far:", rx_bytes)
+      raise
 
 def send(write, adr, dat):
   with access.lock:
