@@ -22,7 +22,8 @@ def sync_time():
     except:
       time.sleep(1)
     else:
-      time.sleep(1800)
+      del gumi
+      time.sleep(900)
 
 sync_time_thread = threading.Thread(target = sync_time)
 sync_time_thread.daemon = True
@@ -78,18 +79,16 @@ class Regulation(object):
     html.append(head)
     body.append(el('hr'))
     link_tab = el('table')
-    caller = inspect.stack()[1][3]
     tr = el('tr')
     for i in dir(self):
-      if not i == caller:
-        attr = eval('self.' + i)
-        if hasattr(attr, 'link') and hasattr(attr, 'exposed') and attr.exposed:
-          td = el('td')
-          a = el('a')
-          a.attrib['href'] = attr.__name__
-          a.text = attr.link
-          td.append(a)
-          tr.append(td)
+      attr = eval('self.' + i)
+      if hasattr(attr, 'link') and hasattr(attr, 'exposed') and attr.exposed:
+        td = el('td')
+        a = el('a')
+        a.attrib['href'] = attr.__name__
+        a.text = attr.link
+        td.append(a)
+        tr.append(td)
     link_tab.append(tr)
     body.append(link_tab)
     body.append(el('hr'))
@@ -242,38 +241,16 @@ class Regulation(object):
     # RAM Symbols
     #
     body.append(html_tools.get_set_form([ x for x in gumi.meta['symbols'] if gumi.is_mem(x) ], "mem", **kwargs))
-
-    #form   = el("form")
-    #form.attrib['action'] = ""
-    #fieldset = el("fieldset")
-
-    #ram_list = filter(lambda x: gumi.meta['symbols'][x]['size'] > 0, gumi.meta['symbols'].keys())
-    #ram_list = filter(lambda x: gumi.meta['symbols'][x]['mem'] == "ram", ram_list)
-    #ram_list = list(ram_list)
-    #ram_list.sort()
-    #
-    #fieldset.append(html_tools.select(ram_list, "ram_symbol", selected = ram_symbol,
-    #                                  onchange = 'this.form.' + 'ram_val' + '.value=""; this.form.submit();'))
-
-    #val = ""
-    #if ram_symbol in ram_list:
-    #  if ram_val:
-    #    if ram_val[0:2] == '0x':
-    #      ram_val = int(ram_val[2:], 0x10)
-    #    else:
-    #      ram_val = int(ram_val)
-    #    gumi.write_symbol(ram_symbol, ram_val)
-    #  val = hex(gumi.read_symbol(ram_symbol))
-
-    #fieldset.append(el('input', type = 'text', name = 'ram_val', value = val))
-
-    #form.append(fieldset)
-    #body.append(form)
     
     #
     # Config Symbols
     #
     body.append(html_tools.get_set_form([ x for x in gumi.meta['symbols'] if gumi.is_config(x) ], "config", **kwargs))
+    
+    #
+    # REGS
+    #
+    body.append(html_tools.get_set_form([ x for x in gumi.meta['symbols'] if gumi.is_reg(x) ], "reg", **kwargs))
     
     #
     # exexec
