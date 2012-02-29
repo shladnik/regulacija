@@ -2,11 +2,18 @@
 #define DBG2CP __attribute__((section(".dbg2cp")))
 
 #ifdef NDEBUG
+  #define DBG_CNT(d)
+  #define DBG_VAR(d, v)
+  #define DBG2CP_VAR(d, v)
   #define assert(e)	        ((void)0)
   #define DBG_COPY(name)    ((void)(name))
   #define DBG_ISR           ISR
   #define DBG_ATOMIC_BLOCK  ATOMIC_BLOCK
 #else
+
+#define DBG_CNT(d)       DBG    static uint8_t d; d++;
+#define DBG_VAR(d, v)    DBG    static typeof(v) d; d = v;
+#define DBG2CP_VAR(d, v) DBG2CP static typeof(v) d; d = v;
 
 extern func_t last_isr;
 extern volatile void * last_adr;
