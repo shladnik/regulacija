@@ -18,7 +18,6 @@ class Gum():
     with Gum.icnt_lock:
       if not Gum.icnt:
         self.connect(port = port, rate = rate, meta = meta, sw = sw)
-      self.meta = Gum.meta
       Gum.icnt += 1
 
   def connect(self, port = None, rate = None, meta = None, sw = None):
@@ -48,7 +47,7 @@ class Gum():
         build = False
         try:
           for uart.uart.baudrate in rates:
-            print("Trying", uart.uart.port, uart.uart.baudrate, "... ")
+            #print("Trying", uart.uart.port, uart.uart.baudrate, "... ")
             uart.uart.open()
             uart.reset(timeout = 0.02)
             try:
@@ -67,8 +66,7 @@ class Gum():
       uart.uart.port     = ports[0]
       uart.uart.baudrate = rates[0]
  
-    print("Device:", uart.uart.port, "- rate:", uart.uart.baudrate)
-    
+    print("Connected to", uart.uart.port, ", rate", uart.uart.baudrate)
     if port and port != uart.uart.port:     print("Port changed (", port, "->", uart.uart.port    , ")")
     if rate and rate != uart.uart.baudrate: print("Rate changed (", rate, "->", uart.uart.baudrate, ")")
     
@@ -87,6 +85,7 @@ class Gum():
  
     sws = filter(lambda x: x[0:6] == "update" and x[-8:] == ".tar.bz2", os.listdir("."))
     sws = sorted(sws, key=lambda x: os.stat(x).st_mtime)
+    sws = list(reversed(sws))
     if sw:
       sws = filter(lambda x: x == sw, sws)
       sws = tuple([sw]) + tuple(sws)
@@ -126,20 +125,21 @@ class Gum():
         if not Gum.icnt:
           to_pickle = { 'port' : uart.uart.port,
                         'rate' : uart.uart.baudrate,
-                        'meta' : self.meta,
+                        'meta' : Gum.meta,
                       }
           pickle.dump(to_pickle, open("gum.cache", 'wb'))
           uart.uart.close()
+          print("Disconnected.")
 
   #
   # R/W functions
   #
 
   def read_symbol(self, name, shape=int):
-    if self.meta['symbols'][name]['mem'] == 'flash':
-      arr = self.read_flash(self.meta['symbols'][name]['adr'], bytearray(self.meta['symbols'][name]['size']))
+    if Gum.meta['symbols'][name]['mem'] == 'flash':
+      arr = self.read_flash(Gum.meta['symbols'][name]['adr'], bytearray(Gum.meta['symbols'][name]['size']))
     else:
-      arr = uart.access(0, self.meta['symbols'][name]['adr'], bytearray(self.meta['symbols'][name]['size']))
+      arr = uart.access(0, Gum.meta['symbols'][name]['adr'], bytearray(Gum.meta['symbols'][name]['size']))
   
     if shape == int:
       return tools.to_int(arr)
@@ -147,10 +147,10 @@ class Gum():
       return arr
   
   def read_symbol_dbgcp(self, name, shape=int):
-    if self.meta['symbols'][name]['mem'] == 'ram' and \
-       self.meta['symbols']['__dbg2cp_start']['adr'] <= self.meta['symbols'][name]['adr'] < self.meta['symbols']['__dbg2cp_end']['adr']:
-      offset = self.meta['symbols']['__dbgcp_start']['adr'] - self.meta['symbols']['__dbg2cp_start']['adr']
-      arr = uart.access(0, self.meta['symbols'][name]['adr'] + offset, bytearray(self.meta['symbols'][name]['size']))
+    if Gum.meta['symbols'][name]['mem'] == 'ram' and \
+       Gum.meta['symbols']['__dbg2cp_start']['adr'] <= Gum.meta['symbols'][name]['adr'] < Gum.meta['symbols']['__dbg2cp_end']['adr']:
+      offset = Gum.meta['symbols']['__dbgcp_start']['adr'] - Gum.meta['symbols']['__dbg2cp_start']['adr']
+      arr = uart.access(0, Gum.meta['symbols'][name]['adr'] + offset, bytearray(Gum.meta['symbols'][name]['size']))
     else:
       raise Exception("Not a dbgcp symbol.")
   
@@ -160,25 +160,25 @@ class Gum():
       return arr
   
   def write_symbol(self, name, dat):
-    if (type(dat) == int): dat = tools.to_bytes(dat, self.meta['symbols'][name]['size'])
-    if self.meta['symbols'][name]['size'] < len(dat): raise Exception("Write over the symbol length")
-    if self.meta['symbols'][name]['mem'] == 'flash':
-      self.write_flash(self.meta['symbols'][name]['adr'], dat)
+    if (type(dat) == int): dat = tools.to_bytes(dat, Gum.meta['symbols'][name]['size'])
+    if Gum.meta['symbols'][name]['size'] < len(dat): raise Exception("Write over the symbol length")
+    if Gum.meta['symbols'][name]['mem'] == 'flash':
+      self.write_flash(Gum.meta['symbols'][name]['adr'], dat)
     else:
-      uart.access(1, self.meta['symbols'][name]['adr'], dat)
+      uart.access(1, Gum.meta['symbols'][name]['adr'], dat)
   
   def read_flash(self, adr, dat):
-    length = min(len(dat[0:0xff]), self.meta['symbols']['flash_buf']['size'])
-    self.exexec('flash_read', [ self.meta['symbols']['flash_buf']['adr'], adr, length ])
-    arr = uart.access(0, self.meta['symbols']['flash_buf']['adr'], dat[0:length])
+    length = min(len(dat[0:0xff]), Gum.meta['symbols']['flash_buf']['size'])
+    self.exexec('flash_read', [ Gum.meta['symbols']['flash_buf']['adr'], adr, length ])
+    arr = uart.access(0, Gum.meta['symbols']['flash_buf']['adr'], dat[0:length])
     if len(dat) > length:
       arr.extend(self.rite_flash(adr + length, dat[length:]))
     return arr
   
   def write_flash(self, adr, dat):
-    length = min(len(dat[0:0xff]), self.meta['symbols']['flash_buf']['size'])
-    arr = uart.access(1, self.meta['symbols']['flash_buf']['adr'], dat[0:length])
-    self.exexec('flash_write', [ self.meta['symbols']['flash_buf']['adr'], adr, length ])
+    length = min(len(dat[0:0xff]), Gum.meta['symbols']['flash_buf']['size'])
+    arr = uart.access(1, Gum.meta['symbols']['flash_buf']['adr'], dat[0:length])
+    self.exexec('flash_write', [ Gum.meta['symbols']['flash_buf']['adr'], adr, length ])
     if len(dat) > length:
       arr.extend(self.write_flash(adr + length, dat[length:]))
     return arr
@@ -195,7 +195,7 @@ class Gum():
 
     try:
       print("Executing bootloader ... ")
-      self.exexec(self.meta['symbols']['__bootloader_adr']['adr'], block = False)
+      self.exexec(Gum.meta['symbols']['__bootloader_adr']['adr'], block = False)
       print("done.")
     except:
       print("Error. Maybe already running.")
@@ -219,15 +219,15 @@ class Gum():
     size_pac.reverse()
     uart.flash_put(size_pac)
     
-    length = size % self.meta['macros']['SPM_PAGESIZE']
-    if length == 0: length = self.meta['macros']['SPM_PAGESIZE']
+    length = size % Gum.meta['macros']['SPM_PAGESIZE']
+    if length == 0: length = Gum.meta['macros']['SPM_PAGESIZE']
    
     cnt = 0;
     while cnt < size:
       pac = binary[cnt:cnt+length] + bytearray([0xa5])
       uart.flash_put(pac)
       cnt += length
-      length = self.meta['macros']['SPM_PAGESIZE']
+      length = Gum.meta['macros']['SPM_PAGESIZE']
    
     print("Time elapsed:", time.clock() - start)
     
@@ -250,10 +250,10 @@ class Gum():
     print("Flashing bootloader...")
     binary = bytearray(f.read())
     print("Size:", len(binary))
-    for i in range(0, len(binary), self.meta['macros']['SPM_PAGESIZE']):
-      page = binary[i:i+self.meta['macros']['SPM_PAGESIZE']]
+    for i in range(0, len(binary), Gum.meta['macros']['SPM_PAGESIZE']):
+      page = binary[i:i+Gum.meta['macros']['SPM_PAGESIZE']]
       self.write_symbol('flash_buf', page)
-      self.exexec('flash_write_block', [ self.meta['symbols']['flash_buf']['adr'], self.meta['symbols']['__bootloader_adr']['adr'] + i, len(page) ])
+      self.exexec('flash_write_block', [ Gum.meta['symbols']['flash_buf']['adr'], Gum.meta['symbols']['__bootloader_adr']['adr'] + i, len(page) ])
     print("Done!")
   
   
@@ -262,8 +262,8 @@ class Gum():
   #
   
   def readcon(self, max_read=1.0):
-    buf  = self.meta['symbols']["print_buf"]['adr']
-    size = self.meta['symbols']["print_buf"]['size']
+    buf  = Gum.meta['symbols']["print_buf"]['adr']
+    size = Gum.meta['symbols']["print_buf"]['size']
     nr = int(max_read * size)
     wp = self.read_symbol("print_buf_wp")
     rp = self.read_symbol("print_buf_rp")
@@ -329,20 +329,20 @@ class Gum():
         time.sleep(1.0)
   
       self.write_symbol("exexec_buf", arg_buf)
-      if type(func) != int: func = self.meta['symbols'][func]['adr']
+      if type(func) != int: func = Gum.meta['symbols'][func]['adr']
       func >>= 1
       
       with uart.access.lock:
         self.write_symbol("exexec_func", func)
         
         if block:
-          expected = ( 1, self.meta['symbols']['exexec_func']['adr'], bytearray([0, 0]) )
+          expected = ( 1, Gum.meta['symbols']['exexec_func']['adr'], bytearray([0, 0]) )
           response = None
-          try:
-            response = uart.receive(timeout = 15)
-            if response != expected: raise Exception("Exexec response failture (expected %s, got %s)." % (str(expected), str(response)))
-          except:
-            if self.read_symbol("exexec_func") != 0: raise Exception("Exexec response failback failture (expected %s, got %s)." % (str(expected), str(response)))
+          #try:
+          response = uart.receive(timeout = 15)
+          if response != expected: raise Exception("Exexec response failture (expected %s, got %s)." % (str(expected), str(response)))
+          #except:
+          #  if self.read_symbol("exexec_func") != 0: raise Exception("Exexec response failback failture (expected %s, got %s)." % (str(expected), str(response)))
   
       if block:
         return_bytes = self.read_symbol("exexec_buf", None)
@@ -362,9 +362,9 @@ class Gum():
     for i in range(len(sensor_list)):
       arr[i * 2] = i
   
-    uart.access(1, self.meta['symbols']['_end']['adr'], arr)
-    self.exexec("ds18b20_get_temp_tab", [ len(sensor_list), resolution, rty, self.meta['symbols']['_end']['adr']])
-    arr = uart.access(0, self.meta['symbols']['_end']['adr'], arr)
+    uart.access(1, Gum.meta['symbols']['_end']['adr'], arr)
+    self.exexec("ds18b20_get_temp_tab", [ len(sensor_list), resolution, rty, Gum.meta['symbols']['_end']['adr']])
+    arr = uart.access(0, Gum.meta['symbols']['_end']['adr'], arr)
    
     for i in range(len(sensor_list)):
       v = tools.to_int(arr[2*i:2*i+2])
@@ -388,21 +388,25 @@ class Gum():
     self.write_symbol('date', tools.mcutime(t, format).get())
 
   def is_config(self, name):
-    syms = self.meta['symbols']
+    syms = Gum.meta['symbols']
     return syms['__config_start']['adr'] <= syms[name]['adr'] < syms['__config_end']['adr'] and syms[name]['size']
 
   def is_mem(self, name):
-    syms = self.meta['symbols']
+    syms = Gum.meta['symbols']
     return syms[name]['mem'] == 'ram' and syms[name]['size']
 
+  def is_reg(self, name):
+    syms = Gum.meta['symbols']
+    return syms[name]['mem'] == 'reg' and syms[name]['size']
+
   def get_config(self):
-    conf = [ (x, self.read_symbol(x)) for x in self.meta['symbols'] if self.is_config(x) ]
+    conf = [ (x, self.read_symbol(x)) for x in Gum.meta['symbols'] if self.is_config(x) ]
     for i in conf: print(i[0], hex(i[1]))
     return conf
 
   def set_config(self, conf):
     for i in conf:
-      if i[0] in self.meta['symbols']:
+      if i[0] in Gum.meta['symbols']:
         print(i[0], hex(i[1]))
         self.write_symbol(i[0], i[1])
       else:
