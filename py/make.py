@@ -79,6 +79,7 @@ includes = (
 
 # AVR
 "avr/io.h",
+"avr/sleep.h",
 "avr/interrupt.h",
 "avr/wdt.h",
 "avr/eeprom.h",
@@ -122,6 +123,7 @@ sources_fw = (
 "src/config.c",
 "src/flash.c",
 "src/time.c",
+"src/keys.c",
 )
 
 sources_bootloader = (
