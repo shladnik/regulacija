@@ -79,7 +79,7 @@ void onewire_1()
 
 bool onewire_val()
 {
-  return port_get(OW_PORT, OW_MASK);
+  return port_get_pin(OW_PORT, OW_BIT);
 }
 
 //

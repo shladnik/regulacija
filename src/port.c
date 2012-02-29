@@ -70,9 +70,12 @@ uint8_t port_get(uint8_t i, uint8_t mask)
   return *pin & mask;
 }
 
+INLINE inline bool port_get_pin(uint8_t i, uint8_t bit)
+{
+  return port_get(i, 1 << bit) != 0;
+}
+
 uint8_t port_get_8(uint8_t i)
 {
-  volatile uint8_t * dir = &DDRA - 3 * i;
-  volatile uint8_t * pin = dir - 1;
-  return *pin;
+  return port_get(i, 0xff);
 }
