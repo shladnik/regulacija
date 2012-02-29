@@ -33,12 +33,12 @@ void clock_init()
 #else
 #error unsupported prescaler
 #endif
-  TIFR  |= (1 << TOV2 );
+  TIFR   = (1 << TOV2 );
   TIMSK |= (1 << TOIE2);
 #endif
 }
 
-date_t date;
+DBG2CP date_t date;
 
 uint8_t month_len()
 {
