@@ -23,10 +23,10 @@ void timer_start()
 #if OVF_CHECK
   TCCR0 = 0x5;
   SFIOR |= (1 << PSR10);
-  TIFR  |= (1 << TOV1 ) | (1 << TOV0 );
+  TIFR   = (1 << TOV1 ) | (1 << TOV0 );
   TIMSK |= (1 << TOIE1) | (1 << TOIE0);
 #else
-  TIFR  |= (1 << TOV1 );
+  TIFR   = (1 << TOV1 );
   TIMSK |= (1 << TOIE1);
 #endif
 }
