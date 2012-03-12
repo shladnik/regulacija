@@ -11,9 +11,9 @@
   #define DBG_ATOMIC_BLOCK  ATOMIC_BLOCK
 #else
 
-#define DBG_CNT(d)       DBG    static uint8_t d; d++;
-#define DBG_VAR(d, v)    DBG    static typeof(v) d; d = v;
-#define DBG2CP_VAR(d, v) DBG2CP static typeof(v) d; d = v;
+#define DBG_CNT(d)       do { DBG    static uint8_t d; d++;     } while(0)
+#define DBG_VAR(d, v)    do { DBG    static typeof(v) d; d = v; } while(0)
+#define DBG2CP_VAR(d, v) do { DBG2CP static typeof(v) d; d = v; } while(0)
 
 extern func_t last_isr;
 extern volatile void * last_adr;
