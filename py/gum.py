@@ -66,10 +66,6 @@ class Gum():
       uart.uart.port     = ports[0]
       uart.uart.baudrate = rates[0]
  
-    print("Connected to", uart.uart.port, ", rate", uart.uart.baudrate)
-    if port and port != uart.uart.port:     print("Port changed (", port, "->", uart.uart.port    , ")")
-    if rate and rate != uart.uart.baudrate: print("Rate changed (", rate, "->", uart.uart.baudrate, ")")
-    
     #
     # Meta
     #
@@ -99,24 +95,26 @@ class Gum():
     build_latest = bytearray(8)
     metafs = tuple([lambda: meta]) + tuple(map(lambda x: lambda: sw2meta(x), sws))
     for metaf in metafs:
-      meta = metaf()
-      if meta:
-        build_curr = extract_build(meta)
-        if meta and build_curr == build:
+      meta_new = metaf()
+      if meta_new:
+        build_curr = extract_build(meta_new)
+        if meta_new and build_curr == build:
           break
         elif bytearray(reversed(build_curr)) > bytearray(reversed(build_latest)):
-          meta_latest  = meta
+          meta_latest  = meta_new
           build_latest = build_curr
       if metaf == metafs[-1]:
         if not meta_latest: raise Exception("No meta found")
         print("Failed to find appropriate meta (", tools.mcutime(build), "). Failing back to latest found (", tools.mcutime(build_latest), ").")
-        meta  = meta_latest
+        meta_new  = meta_latest
         build = build_latest
+    Gum.meta = meta_new
+    uart.max_write_len = Gum.meta['symbols']['rx_buf']['size']
 
-    print("Meta build:", tools.mcutime(build))
-      
-    uart.max_write_len = meta['symbols']['rx_buf']['size']
-    Gum.meta = meta
+    print("Connected to", uart.uart.port, " rate", uart.uart.baudrate, tools.mcutime(build))
+    if port and port != uart.uart.port:     print("Port changed (", port                              , "->", uart.uart.port                        , ")")
+    if rate and rate != uart.uart.baudrate: print("Rate changed (", rate                              , "->", uart.uart.baudrate                    , ")")
+    if meta and meta != Gum.meta:           print("Meta changed (", tools.mcutime(extract_build(meta)), "->", tools.mcutime(extract_build(Gum.meta)), ")")
 
   def __del__(self):
     with Gum.icnt_lock:
@@ -192,51 +190,55 @@ class Gum():
     print("Saving config ... ")
     conf = self.get_config()
     print("done.")
-
-    try:
-      print("Executing bootloader ... ")
-      self.exexec(Gum.meta['symbols']['__bootloader_adr']['adr'], block = False)
-      print("done.")
-    except:
-      print("Error. Maybe already running.")
-      uart.reset()
     
-    print("Waiting for initial ACK ...")
-    if uart.get(timeout = 30.0) != 0xa5: raise Exception("Failed to start bootloader")
-    print("got!")
-    
-    print("Bootloader started! Flashing...")
-    
-    start = time.clock()
+    while 1:
+      with Gum.icnt_lock:
+        if Gum.icnt <= 1:
+          try:
+            print("Executing bootloader ... ")
+            self.exexec(Gum.meta['symbols']['__bootloader_adr']['adr'], block = False)
+            print("done.")
+          except:
+            print("Error. Maybe already running.")
+            uart.reset()
+          
+          print("Waiting for initial ACK ...")
+          if uart.get(timeout = 30.0) != 0xa5: raise Exception("Failed to start bootloader")
+          print("got!")
+          
+          print("Bootloader started! Flashing...")
+          
+          start = time.clock()
    
-    binary = bytearray(f.read())
-    binary.reverse()
-    size = len(binary)
-    print("Size:", size)
-    if not (0 < size <= 32 * 1024): raise Exception("File size error")
+          binary = bytearray(f.read())
+          binary.reverse()
+          size = len(binary)
+          print("Size:", size)
+          if not (0 < size <= 32 * 1024): raise Exception("File size error")
    
-    size_pac = tools.to_bytes(size, 2)
-    size_pac.reverse()
-    uart.flash_put(size_pac)
-    
-    length = size % Gum.meta['macros']['SPM_PAGESIZE']
-    if length == 0: length = Gum.meta['macros']['SPM_PAGESIZE']
+          size_pac = tools.to_bytes(size, 2)
+          size_pac.reverse()
+          uart.flash_put(size_pac)
+          
+          length = size % Gum.meta['macros']['SPM_PAGESIZE']
+          if length == 0: length = Gum.meta['macros']['SPM_PAGESIZE']
    
-    cnt = 0;
-    while cnt < size:
-      pac = binary[cnt:cnt+length] + bytearray([0xa5])
-      uart.flash_put(pac)
-      cnt += length
-      length = Gum.meta['macros']['SPM_PAGESIZE']
+          cnt = 0;
+          while cnt < size:
+            pac = binary[cnt:cnt+length] + bytearray([0xa5])
+            uart.flash_put(pac)
+            cnt += length
+            length = Gum.meta['macros']['SPM_PAGESIZE']
    
-    print("Time elapsed:", time.clock() - start)
-    
-    if uart.get() != 0xa5: raise Exception("Failed!")
-    else:                  print("Succeed!")
-    
-    time.sleep(5.0)
-    print("Reconnecting...")
-    self.connect()
+          print("Time elapsed:", time.clock() - start)
+          
+          if uart.get() != 0xa5: raise Exception("Failed!")
+          else:                  print("Succeed!")
+          
+          time.sleep(5.0)
+          print("Reconnecting...")
+          self.connect()
+          break
 
     print("Restoring config ... ")
     self.set_config(conf)
