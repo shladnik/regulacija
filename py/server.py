@@ -4,6 +4,7 @@ import xml.etree.ElementTree
 import cherrypy
 import cherrypy.lib.auth_digest
 import inspect
+import _strptime # I don't fully understand it but this is a workaround for http://bugs.python.org/issue8098
 import time
 import sys
 import os
