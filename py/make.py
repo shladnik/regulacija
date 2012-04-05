@@ -39,17 +39,20 @@ cflags = (
 "-mmcu=atmega32",
 "-std=gnu99",
 
+#"-fstack-usage",
+
 "-Wall",
 "-Wextra",
 "-pedantic",
+#"-Wstack-usage",
 
 "-mcall-prologues",
 "-fshort-enums",
-"-combine",
-"-fwhole-program",
+#"-combine",
+#"-fwhole-program",
 "-fno-split-wide-types",
 "-funsigned-char",
-#"-flto",
+"-flto",
 #"-nostartfiles",
 
 
@@ -201,6 +204,10 @@ recompile = {
   'fw'         : True,
   'bootloader' : True,
 }
+
+if len(sys.argv) > 1:
+  for k in recompile:
+    if k not in sys.argv[1:]: recompile[k] = False
 
 cmptime = (lambda: 0, lambda: os.stat(".timestamp").st_mtime)[os.path.exists(".timestamp")]()
 
