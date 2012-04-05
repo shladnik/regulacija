@@ -1,5 +1,5 @@
-#define DBG    __attribute__((section(".dbg")))
-#define DBG2CP __attribute__((section(".dbg2cp")))
+#define DBG    __attribute__((used, section(".dbg")))
+#define DBG2CP __attribute__((used, section(".dbg2cp")))
 
 #ifdef NDEBUG
   #define DBG_CNT(d)
