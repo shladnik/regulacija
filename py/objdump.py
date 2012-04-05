@@ -22,10 +22,13 @@ def get_symbols(sections = [], objs = None):
         tab_pos += 1
         if chr(c) == '\t':
           break
-      symbol[line[tab_pos+10:len(line)-1].decode()] = { 'adr': int(line[0:8], 16),
-                                                      'flags': line[9:16].decode(),
-                                                    'section': line[17:tab_pos].decode(),
-                                                       'size': int(line[tab_pos+1:tab_pos+9], 16) }
+      name = line[tab_pos+10:len(line)-1].decode()
+      if name[0:len(".hidden ")] == ".hidden ":
+        name = name[len(".hidden "):]
+      symbol[name] = { 'adr': int(line[0:8], 16),
+                     'flags': line[9:16].decode(),
+                   'section': line[17:tab_pos].decode(),
+                      'size': int(line[tab_pos+1:tab_pos+9], 16) }
     except Exception as inst:
       #print("Ignoring: ", line, inst)
       pass
