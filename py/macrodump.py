@@ -7,16 +7,17 @@ class macrodump():
     out = filter(lambda x: len(x) <= 2, out)
     r = dict()
     for d in out:
-      if len(d) == 1:
-        r[d[0]] = True
-      else:
-        try:
-          r[d[0]] = int(d[1])
-        except:
+      if len(d):
+        if len(d) == 1:
+          r[d[0]] = True
+        else:
           try:
-            r[d[0]] = int(d[1], 16)
+            r[d[0]] = int(d[1])
           except:
-            r[d[0]] = d[1]
+            try:
+              r[d[0]] = int(d[1], 16)
+            except:
+              r[d[0]] = d[1]
     return r
     
   def getregs(self):
