@@ -20,22 +20,16 @@ def sync_time():
     try:
       gumi = gum.Gum()
       gumi.set_time()
-    except:
+    except Exception as inst:
+      print("sync_time failed:", inst)
       time.sleep(1)
     else:
       del gumi
       time.sleep(900)
 
-sync_time_thread = threading.Thread(target = sync_time)
+sync_time_thread = threading.Thread(target = sync_time, name = 'SyncTimeThread')
 sync_time_thread.daemon = True
 sync_time_thread.start()
-
-
-
-
-
-
-
 
 
 el = xml.etree.ElementTree.Element
@@ -120,7 +114,7 @@ class Regulation(object):
     page = ""
     page += '<?xml version="1.0" encoding="UTF-8"?>'
     page += '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">'
-    page += xml.etree.ElementTree.tostring(html)
+    page += xml.etree.ElementTree.tostring(html).decode()
     return page
 
   def index(self):
@@ -456,4 +450,23 @@ config = {
 
 cherrypy.config.update(config)
 cherrypy.tree.mount(root = Regulation(), config = config)
-cherrypy.engine.start()
+server_thread = threading.Thread(target = cherrypy.engine.start)
+server_thread.daemon = True
+server_thread.start()
+
+try:
+  while (1): time.sleep(1)
+except KeyboardInterrupt:
+  import signal, traceback
+  def dumpstacks(signal, frame):
+    id2name = dict((th.ident, th.name) for th in threading.enumerate())
+    for threadId, stack in sys._current_frames().items():
+      name = id2name[threadId]
+      if name not in ( 'MainThread', 'SyncTimeThread' ) and traceback.extract_stack(stack)[-1][3] !=  'waiter.acquire()':
+        print(name)
+        traceback.print_stack(f=stack)
+  signal.signal(signal.SIGQUIT, dumpstacks)
+  os.killpg(os.getpgid(0), signal.SIGQUIT)
+
+  cherrypy.process.bus.exit()
+  sys.exit()
