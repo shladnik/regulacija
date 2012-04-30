@@ -7,32 +7,35 @@ import time
 
 uart = serial.Serial()
 
-def get(timeout = 0.5): #1000 * 10.0/uart.baudrate):
+def get(timeout = 0.1): #1000 * 10.0/uart.baudrate):
   uart.timeout = timeout
-  r = uart.read(1)
-  if not r: raise Exception 
-  r = r[0]
-  return r
+  try:
+    r = uart.read(1)[0]
+    #print("R:", hex(r))
+    return r
+  except IndexError:
+    return None
 
 def put(b, delay = 0.0001):
   if type(b) != int:
     raise Exception("Cannot send more then a char at once.")
   #print("T:", hex(b))
-  uart.write(bytes([b]))
   time.sleep(delay)
+  uart.write(bytes([b]))
 
-def reset(timeout = 1):
-  timeout_orig = uart.timeout
-  uart.timeout = timeout
-  flushed = []
+def reset(make_sure = 1):
+  to_prev = uart.timeout
+  uart.timeout = 0
   while 1:
-    foo = uart.read(256)
-    if foo:
-      flushed.append(foo)
+    flushed = uart.read(256)
+    if len(flushed):
+      print("Cleared:", end=" ")
+      for b in flushed: print("%02x" % b, end=" ")
+      print()
+      time.sleep(make_sure)
     else:
       break
-  if flushed: print("UART flushed bytes:", flushed)
-  uart.timeout = timeout_orig
+  uart.timeout = to_prev
 
 #
 # Flashing stuff
@@ -49,6 +52,18 @@ def flash_put(pac):
 #
 # Protocol stuff
 #
+
+class ProtocolErr(Exception):
+  def __str__(self):
+    return self.__class__.__name__ + "(" + super().__str__() + ")"
+
+class RxErrTimeout(ProtocolErr): pass
+class RxErrAddr   (ProtocolErr): pass
+class RxErrData   (ProtocolErr): pass
+class RxErrCRC    (ProtocolErr): pass
+class TxErrData   (ProtocolErr): pass
+class ResponseErr (ProtocolErr): pass
+
 def crc_update(crc, byte):
   if not 0 <= byte < 0x100: raise
   poly = 0x18
@@ -73,20 +88,21 @@ def receive(timeout):
     try:
       rx_bytes = bytearray()
       
-      def rx_nr(cnt, timeout = 0):
+      def rx_nr(cnt):
         while len(rx_bytes) < cnt:
           b = int()
           if cnt == 1:
             b = get(timeout=timeout)
           else:
             b = get()
+          if b == None: raise RxErrTimeout()
           rx_bytes.append(b)
 
       pac_len = 1
-      rx_nr(pac_len, timeout)
+      rx_nr(pac_len)
       write   = (rx_bytes[0] & 0x80) >> 7
       adr_len = (rx_bytes[0] & 0x7f) >> 0
-      if adr_len > 2: raise Exception("Address too long")
+      if adr_len > 2: raise RxErrAddr()
 
       pac_len += adr_len
       rx_nr(pac_len)
@@ -100,7 +116,7 @@ def receive(timeout):
       rx_nr(pac_len)
       dat_len = rx_bytes[adr_len+1]
 
-      if dat_len == 0: raise Exception("Data length zero")
+      if dat_len == 0: raise RxErrData()
  
       if write:
         dat_start = pac_len
@@ -112,13 +128,16 @@ def receive(timeout):
 
       pac_len += 1
       rx_nr(pac_len)
-      if calc_crc(rx_bytes[0:pac_len]): raise Exception("CRC error")
+      if calc_crc(rx_bytes[0:pac_len]): raise RxErrCRC()
 
       for i in range(pac_len): rx_bytes.pop(0)
 
       return (write, adr, dat)
-    except:
-      print("Received so far:", rx_bytes)
+    except ProtocolErr as inst:
+      if rx_bytes:
+        print("Received so far:", end=" ")
+        for b in rx_bytes: print(hex(b), end=" ")
+        print()
       raise
 
 def send(write, adr, dat):
@@ -143,7 +162,7 @@ def access(write, adr, dat, rty = 2):
   if write: max_len = max_write_len
   else:     max_len = 0xff
 
-  if len(dat) == 0: raise Exception("Data length zero")
+  if len(dat) == 0: raise TxErrData()
   adr &= 0xffff
   
   with access.lock:
@@ -152,20 +171,49 @@ def access(write, adr, dat, rty = 2):
       try:
         pac = receive(timeout = 0.5)
         if not (pac[0] == ~write & 0x1 and pac[1] == adr and len(pac[2]) == len(dat[0:max_len])):
-          raise Exception("Wrong packet received", pac, adr, len(dat))
+          print("Wrong packet received:", pac, adr, len(dat))
+          raise ResponseErr()
         else:
           break
-      except Exception as inst:
+      except ProtocolErr as inst:
         # clear things up
-        print("Protocol error:", type(inst), inst)
         reset()
         if rty:
+          print(inst, "occured. Retrying...")
           rty -= 1
           send(write, adr, dat[0:max_len])
         else:
           raise
+      except:
+        print("other error!")
+        raise
 
     if len(dat) > max_len:
       pac[2].extend(access(write, adr + max_len, dat[max_len:]))
     return pac[2]
 access.lock = threading.RLock()
+
+if __name__ == "__main__":
+  """ Only useful with PLAIN_CONSOLE defined """
+  import sys
+  if len(sys.argv) != 3:
+    print("Usage:", sys.argv[0], "port", "baud")
+  else:
+    uart.port     = sys.argv[1]
+    uart.baudrate = int(sys.argv[2])
+    uart.open()
+    
+    def receiver():
+      while 1:
+        c = get()
+        if c != None:
+          print(bytearray([c]).decode('utf8', 'ignore'), end = "")
+          sys.stdout.flush()
+    
+    rt = threading.Thread(target = receiver)
+    rt.daemon = True
+    rt.start()
+
+    while 1:
+      for i in bytearray(input(), 'utf8'):
+        put(i)
