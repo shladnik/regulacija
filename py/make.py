@@ -18,6 +18,8 @@ build_time = tools.mcutime().get()
 defines = {
   "F_CPU"   : 9216000,
   "BAUD"    : 230400,
+#  "F_CPU"   : 16000000,
+#  "BAUD"    : 1000000,
 #  "NDEBUG" : "",
   "__ASSERT_USE_STDERR" : "", # I have my own assert right now anyway
   "PLAIN_CONSOLE" : 0,
@@ -37,6 +39,7 @@ cflags = (
 #"-feliminate-dwarf2-dups",
 "-Os",
 "-mmcu=atmega32",
+#"-mmcu=atmega328p",
 "-std=gnu99",
 
 #"-fstack-usage",
@@ -259,7 +262,7 @@ if any(recompile.values()):
   for i in recompile:
     if recompile[i] and compile(eval('sources_' + i), i): print("Compile error"); exit()
 
-  obj_sym = objdump.correct_symbols(objdump.get_symbols())
+  obj_sym = objdump.correct_symbols(objdump.get_symbols(objs = [ "fw.obj" ]))
   reg_sym = macros.getregs()
   if not set(reg_sym.keys()).isdisjoint(set(obj_sym.keys())): raise
   symbols = dict()
