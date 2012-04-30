@@ -23,8 +23,10 @@ def get_symbols(sections = [], objs = None):
         if chr(c) == '\t':
           break
       name = line[tab_pos+10:len(line)-1].decode()
-      if name[0:len(".hidden ")] == ".hidden ":
-        name = name[len(".hidden "):]
+      prefix = '.hidden '
+      if name[0:len(prefix)] == prefix:
+        name = name[len(prefix):]
+      if name in symbol: raise Exception("Symbol collision.")
       symbol[name] = { 'adr': int(line[0:8], 16),
                      'flags': line[9:16].decode(),
                    'section': line[17:tab_pos].decode(),
@@ -42,20 +44,22 @@ def correct_symbols(syms):
       syms[i]['adr'] -= 0x800000
       syms[i]['mem'] = 'ram'
 
-  original = syms.copy()
-  for key in original:
-    inx = key.find('.')
-    if inx != -1:
-      real_name = key[0:inx]
-      cnt = 0
-      for j in original:
-        inx_j = j.find('.')
-        real_name_j = j[0:inx_j]
-        if inx == inx_j and real_name == real_name_j:
-          cnt += 1
-      if cnt == 1:
-        del syms[key]
-        syms[real_name] = original[key]
+  names = dict()
+  for n in syms.keys():
+    try:
+      i = n.index('.')
+    except ValueError:
+      rn = n
+    else:
+      rn = n[0:i]
+    names[n] = rn
+  
+  nl = list(names.values())
+  for n in names.keys():
+    if nl.count(names[n]) == 1:
+      if names[n] != n:
+        syms[names[n]] = syms[n]
+        del syms[n]
 
   return syms
 
