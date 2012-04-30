@@ -20,10 +20,12 @@ class Gum():
         self.connect(port = port, rate = rate, meta = meta, sw = sw)
       Gum.icnt += 1
 
+  # TODO: do the opposite way around - read parameters from avalible files
   def connect(self, port = None, rate = None, meta = None, sw = None):
     try:
       unpickled = pickle.load(open("gum.cache", 'rb'))
-    except: pass
+    except IOError:
+      pass
     else:
       if not port: port = unpickled['port']
       if not rate: rate = unpickled['rate']
@@ -36,7 +38,7 @@ class Gum():
     ports = tuple(filter(os.path.exists, ports))
     if not ports: raise Exception("No port found!")
     
-    rates = ( 230400, 115200, 9600 )
+    rates = ( 230400, 1000000, 115200, 9600 )
     #rates = rates + tuple(reversed(sorted(tuple(set(uart.uart.BAUDRATES) - set(rates)))))
     if rate:
       rates = filter(lambda x: x != rate, rates)
@@ -47,22 +49,20 @@ class Gum():
         build = False
         try:
           for uart.uart.baudrate in rates:
-            #print("Trying", uart.uart.port, uart.uart.baudrate, "... ")
             uart.uart.open()
-            uart.reset(timeout = 0.02)
             try:
               build = uart.access(0, 0x60, bytearray(8))
               break;
-            except:
+            except uart.ProtocolErr as inst:
+              print("Failed:", uart.uart.port, uart.uart.baudrate, "reason:", inst)
               if uart.uart.baudrate == rates[-1]: raise
               else:                               continue
-        except:
+        except uart.ProtocolErr:
           if uart.uart.port == ports[-1]: raise
           else:                           continue
         if build: break
-    except Exception as inst:
-      print("Failed to autoconnect:", inst)
-      print("Defaulting to the first listed ...")
+    except uart.ProtocolErr:
+      print("Failed to autoconnect, defaulting to the first listed ...")
       uart.uart.port     = ports[0]
       uart.uart.baudrate = rates[0]
  
@@ -198,12 +198,12 @@ class Gum():
             print("Executing bootloader ... ")
             self.exexec(Gum.meta['symbols']['__bootloader_adr']['adr'], block = False)
             print("done.")
-          except:
-            print("Error. Maybe already running.")
+          except uart.ProtocolErr as inst:
+            print("Error (", inst, "). Maybe already running.")
             uart.reset()
           
           print("Waiting for initial ACK ...")
-          if uart.get(timeout = 30.0) != 0xa5: raise Exception("Failed to start bootloader")
+          if uart.get(timeout = 10.0) != 0xa5: raise Exception("Failed to start bootloader")
           print("got!")
           
           print("Bootloader started! Flashing...")
@@ -232,10 +232,10 @@ class Gum():
    
           print("Time elapsed:", time.clock() - start)
           
-          if uart.get() != 0xa5: raise Exception("Failed!")
-          else:                  print("Succeed!")
-          
-          time.sleep(5.0)
+          if uart.get() == 0xa5: print("Succeed!")
+          else:         raise Exception("Failed!")
+
+          #time.sleep(5.0) # TODO uC reply with build instead of waiting? What about BAUD?
           print("Reconnecting...")
           self.connect()
           break
@@ -343,7 +343,7 @@ class Gum():
           #try:
           response = uart.receive(timeout = 15)
           if response != expected: raise Exception("Exexec response failture (expected %s, got %s)." % (str(expected), str(response)))
-          #except:
+          #except ProtocolErr:
           #  if self.read_symbol("exexec_func") != 0: raise Exception("Exexec response failback failture (expected %s, got %s)." % (str(expected), str(response)))
   
       if block:
