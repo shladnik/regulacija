@@ -60,7 +60,7 @@ def config_list(element, c, h):
     decl += "int" + str(size) + "_t "
     decl += d.tag
 
-    c.write('__attribute__((section(".config"))) ' + decl + ' = ' + hex(reset) + ';')
+    c.write('__attribute__((section(".config"))) ' + decl + ' = ' + hex(reset) + ';\n')
     h.write('extern ' + decl + ';\n')
 
 def list2c(element):
