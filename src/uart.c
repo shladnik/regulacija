@@ -24,14 +24,14 @@ void send(pac_t p)
 {
 #ifndef NDEBUG
   DBG static uint8_t tx_busy;
-  if    (wp == rp && (UCSRB & (1 << UDRIE)) && (tx_busy < (typeof(tx_busy))-1)) tx_busy++;
+  if    (wp == rp && (UCSR0B & (1 << UDRIE0)) && (tx_busy < (typeof(tx_busy))-1)) tx_busy++;
 #endif
-  while (wp == rp && (UCSRB & (1 << UDRIE)));
+  while (wp == rp && (UCSR0B & (1 << UDRIE0)));
   tx_queue[wp] = p;
   
   DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     wp = pinc(wp);
-    UCSRB |= 1 << UDRIE;
+    UCSR0B |= 1 << UDRIE0;
   }
 }
 
@@ -40,14 +40,14 @@ void rx_reset()
 {
   rx_state = ADR_SIZE;
   rx_crc = 0;
-  UCSRB &= ~(1 << RXEN);
-  UCSRB |=  (1 << RXEN);
+  UCSR0B &= ~(1 << RXEN0);
+  UCSR0B |=  (1 << RXEN0);
 }
 
 void rx_timeout()
 {
   rx_timer = 0;
-  if (!(UCSRA & (1 << RXC))) {
+  if (!(UCSR0A & (1 << RXC0))) {
 #ifndef NDEBUG
     DBG static uint8_t rx_timeout;
     if (rx_timeout < (typeof(rx_timeout))-1) rx_timeout++;
@@ -56,10 +56,11 @@ void rx_timeout()
   }
 }
 
-DBG_ISR(USART_RXC_vect, ISR_BLOCK)
+DBG_ISR(USART_RX_vect, ISR_BLOCK)
 {
 #if PLAIN_CONSOLE
-  assert(0);
+  //assert(0);
+  UDR0 = UDR0;
 #else
   if (rx_timer) {
     rx_timer = 0;
@@ -68,14 +69,14 @@ DBG_ISR(USART_RXC_vect, ISR_BLOCK)
 
   bool err = 0;
 
-  if (UCSRA & ((1<<FE)|(1<<DOR)|(1<<PE))) {
+  if (UCSR0A & ((1<<FE0)|(1<<DOR0)|(1<<UPE0))) {
 #ifndef NDEBUG
     DBG static uint8_t rx_ovf;
     if (rx_ovf < (typeof(rx_ovf))-1) rx_ovf++;
 #endif
     err = 1;
   } else {
-    uint8_t byte = UDR;
+    uint8_t byte = UDR0;
     rx_crc = _crc_ibutton_update(rx_crc, byte);
     static uint8_t i;
  
@@ -126,7 +127,7 @@ DBG_ISR(USART_RXC_vect, ISR_BLOCK)
         if (rx_crc) {
           err = 1;
         } else {
-          if (rx.write) {
+          if (rx.write) { // TODO limit writeable space?
             for (uint8_t i = 0; i < rx.dat_len; i++) {
               *(rx.adr+i) = rx_buf[i];
             }
@@ -148,7 +149,7 @@ DBG_ISR(USART_RXC_vect, ISR_BLOCK)
     if (rx_err < (typeof(rx_err))-1) rx_err++;
 #endif
     rx_reset();
-  } else if (rx_state != ADR_SIZE && !(UCSRA & (1 << RXC))) {
+  } else if (rx_state != ADR_SIZE && !(UCSR0A & (1 << RXC0))) {
     rx_timer = 1;
     timer_add(TIMER_MS(100), rx_timeout, 0, -1);
   }
@@ -164,10 +165,10 @@ DBG_ISR(USART_UDRE_vect, ISR_BLOCK)
       print_buf_ovf = 0;
       printf("\n\n# LOST >= %d #\n\n", ovf);
     } else {
-      UCSRB &= ~(1 << UDRIE);
+      UCSR0B &= ~(1 << UDRIE0);
     }
   } else
-    UDR = print_buf_read();
+    UDR0 = print_buf_read();
 #else
   uint8_t byte;
 
@@ -202,31 +203,31 @@ DBG_ISR(USART_UDRE_vect, ISR_BLOCK)
       tx_state = ADR_SIZE;
 
       rp = pinc(rp);
-      if (wp == rp) UCSRB &= ~(1 << UDRIE);
+      if (wp == rp) UCSR0B &= ~(1 << UDRIE0);
       break;
     }
   }
 
   tx_crc = _crc_ibutton_update(tx_crc, byte);
-  UDR = byte;
+  UDR0 = byte;
 #endif
 }
 
 void uart_init()
 {
   #include <util/setbaud.h>
-  UBRRH = UBRRH_VALUE;
-  UBRRL = UBRRL_VALUE;
+  UBRR0H = UBRRH_VALUE;
+  UBRR0L = UBRRL_VALUE;
 #if USE_2X
-  UCSRA |=  (1 << U2X);
+  UCSR0A |=  (1 << U2X0);
 #else
-  UCSRA &= ~(1 << U2X);
+  UCSR0A &= ~(1 << U2X0);
 #endif
   
-  UCSRC = (1 << URSEL) | (3 << UCSZ0);
-#if PLAIN_CONSOLE
-  UCSRB = (1 << TXEN);
+  UCSR0C = (3 << UCSZ00);
+#if 0 //PLAIN_CONSOLE
+  UCSR0B = (1 << TXEN0);
 #else
-  UCSRB = (1 << RXCIE) | (1 << RXEN) | (1 << TXEN);
+  UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
 #endif
 }

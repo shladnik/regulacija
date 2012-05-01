@@ -20,14 +20,14 @@ void log_adr()
 __attribute__((always_inline)) void __assert()
 {
   label:
-  assert_last = &&label;
+  assert_log[0] = &&label;
   watchdog_mcu_reset();
 }
 #else
 void __assert()
 {
   const uint8_t log_len = sizeof(assert_log) / sizeof(assert_log[0]);
-  assert_log[MIN(assert_cnt, log_len - 1)] = __builtin_return_address(0);
+  assert_log[MIN(assert_cnt, log_len - 1)] = (uintptr_t)__builtin_return_address(0);
   if (assert_cnt < (typeof(assert_cnt))-1) assert_cnt++;
   watchdog_mcu_reset();
 }
@@ -35,9 +35,34 @@ void __assert()
 
 DBG_ISR(BADISR_vect, ISR_BLOCK)
 {
-  assert(0);
+  DBG_CNT(vector_bad);
 }
 
+//DBG_ISR(WDT_vect, ISR_BLOCK)
+
+#if 0
+#define BADISR_CNT(i) DBG_ISR(_VECTOR(i)) { DBG_CNT(vector_##i##_cnt); }
+//BADISR_CNT( 1)
+//BADISR_CNT( 2)
+BADISR_CNT( 3)
+BADISR_CNT( 4)
+//BADISR_CNT( 5)
+BADISR_CNT( 6)
+//BADISR_CNT( 7)
+BADISR_CNT( 8)
+//BADISR_CNT( 9)
+BADISR_CNT(10)
+//BADISR_CNT(11)
+BADISR_CNT(12)
+//BADISR_CNT(13)
+//BADISR_CNT(14)
+BADISR_CNT(15)
+//BADISR_CNT(16)
+BADISR_CNT(17)
+//BADISR_CNT(18)
+//BADISR_CNT(19)
+BADISR_CNT(20)
+#endif
 
 USED void debug_init()
 {
@@ -51,13 +76,15 @@ USED void debug_init()
 __attribute__((section(".init3"), naked, used))
 void debug()
 {
-  const uint8_t RFMASK = (1 << JTRF) | (1 << WDRF) | (1 << BORF) | (1 << EXTRF) | (1 << PORF);
-  uint8_t rst_src = MCUCSR & RFMASK;
-  MCUCSR = MCUCSR & ~RFMASK;
+  const uint8_t RFMASK = (1 << WDRF) | (1 << BORF) | (1 << EXTRF) | (1 << PORF);
+  uint8_t rst_src = MCUSR & RFMASK;
+  MCUSR = MCUSR & ~RFMASK;
+  wdt_disable();
 
   /* add bootloader "reset" flag */
   PROGMEM static const char sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
-  if (memcmp_P((char *)0x60, sign, sizeof(sign)) == 0) {
+  extern uint8_t __data_start;
+  if (memcmp_P(&__data_start, sign, sizeof(sign)) == 0) {
     rst_src |= RFMASK + 1;
     rst_src &= ~(1 << WDRF);
   }

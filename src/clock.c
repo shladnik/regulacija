@@ -17,24 +17,24 @@ void clock_init()
   ASSR = 0x08;
 #endif
 #if   CLOCK_PRESCALER == 1
-  TCCR2 = 0x1;
+  TCCR2A = 0x1;
 #elif CLOCK_PRESCALER == 8
-  TCCR2 = 0x2;
+  TCCR2A = 0x2;
 #elif CLOCK_PRESCALER == 32
-  TCCR2 = 0x3;
+  TCCR2A = 0x3;
 #elif CLOCK_PRESCALER == 64
-  TCCR2 = 0x4;
+  TCCR2A = 0x4;
 #elif CLOCK_PRESCALER == 128
-  TCCR2 = 0x5;
+  TCCR2A = 0x5;
 #elif CLOCK_PRESCALER == 256
-  TCCR2 = 0x6;
+  TCCR2A = 0x6;
 #elif CLOCK_PRESCALER == 1024
-  TCCR2 = 0x7;
+  TCCR2A = 0x7;
 #else
 #error unsupported prescaler
 #endif
-  TIFR   = (1 << TOV2 );
-  TIMSK |= (1 << TOIE2);
+  TIFR2   = (1 << TOV2 );
+  TIMSK2 |= (1 << TOIE2);
 #endif
 }
 

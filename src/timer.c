@@ -21,14 +21,17 @@ void timer_start()
 #error unsupported prescaler
 #endif
 #if OVF_CHECK
-  TCCR0 = 0x5;
+  TCCR0B  = 0x5;
+#if __AVR_ATmega32__
   SFIOR |= (1 << PSR10);
-  TIFR   = (1 << TOV1 ) | (1 << TOV0 );
-  TIMSK |= (1 << TOIE1) | (1 << TOIE0);
 #else
-  TIFR   = (1 << TOV1 );
-  TIMSK |= (1 << TOIE1);
+  GTCCR  |= (1 << PSRSYNC);
 #endif
+  TIFR0   = (1 << TOV0 );
+  TIMSK0 |= (1 << TOIE0);
+#endif
+  TIFR1   = (1 << TOV1 );
+  TIMSK1 |= (1 << TOIE1);
 }
 
 #if OVF_CHECK
@@ -48,7 +51,7 @@ DBG_ISR(TIMER0_OVF_vect, ISR_BLOCK)
 void TIMER1_COMPA_vect_trigger()
 {
   OCR1A = TCNT1 + (PRESCALER > 1 ? 0x2 : 0x8);
-  while (!(TIFR & (1 << OCIE1A)));
+  while (!(TIFR1 & (1 << OCIE1A)));
 }
 
 DBG_ISR(TIMER1_OVF_vect,)
@@ -56,8 +59,8 @@ DBG_ISR(TIMER1_OVF_vect,)
   high++;
   if (en && cmp_high == high) {
     en = 0;
-    TIMSK |= 1 << OCIE1A;
-    TIFR   = 1 << OCIE1A;
+    TIMSK1 |= 1 << OCIE1A;
+    TIFR1   = 1 << OCIE1A;
     if (OCR1A <= TCNT1) {
       TIMER1_COMPA_vect_trigger();
     }
@@ -66,7 +69,7 @@ DBG_ISR(TIMER1_OVF_vect,)
 
 DBG_ISR(TIMER1_COMPA_vect,)
 {
-  TIMSK &= ~(1 << OCIE1A);
+  TIMSK1 &= ~(1 << OCIE1A);
   extern void timer_int();
   timer_int();
 }
@@ -80,7 +83,7 @@ timer_t timer_now()
   DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     high_val  = high;
     TCNT1_val = TCNT1;
-    ovf = TIFR & (1 << TOV1);
+    ovf = TIFR1 & (1 << TOV1);
     if (ovf) TCNT1_val = TCNT1;
   }
   if (ovf) {
@@ -105,7 +108,7 @@ void timer_set(timer_t cmp)
 
   timer_t tracked = timer_tracked_get();
   OCR1A = (uint16_t)cmp;
-  TIFR = 1 << OCIE1A;
+  TIFR1 = 1 << OCIE1A;
   timer_t now = timer_now();
 
   if (in_range(tracked, cmp, now)) {
@@ -116,11 +119,11 @@ void timer_set(timer_t cmp)
     timer_late_max = MAX(timer_late_max, now - tracked);
 #endif
     TIMER1_COMPA_vect_trigger();
-    TIMSK |= 1 << OCIE1A;
+    TIMSK1 |= 1 << OCIE1A;
   } else {
     cmp_high = cmp >> 16;
     if (cmp_high == high) {
-      TIMSK |= 1 << OCIE1A;
+      TIMSK1 |= 1 << OCIE1A;
     } else {
       en = 1;
     }
@@ -130,5 +133,5 @@ void timer_set(timer_t cmp)
 void timer_unset()
 {
   en = 0;
-  TIMSK &= ~(1 << OCIE1A);
+  TIMSK1 &= ~(1 << OCIE1A);
 }

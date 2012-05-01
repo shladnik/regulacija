@@ -7,12 +7,12 @@ typedef uint16_t pptr_t;
 #endif
 
 static const uint8_t ACK  = 0xa5;
-static const uint8_t NACK = 0x5a;
+static const uint8_t NACK = 0x00;
 
 void restart()
 {
-  while (!(UCSRA & (1 << UDRE)));
-  while (!(UCSRA & (1 << TXC)));
+  while (!(UCSR0A & (1 << UDRE0)));
+  while (!(UCSR0A & (1 << TXC0)));
   wdt_enable(0);
   while(1);
 }
@@ -20,19 +20,19 @@ void restart()
 uint8_t get()
 {
   wdt_reset();
-  while (!(UCSRA & (1 << RXC)));
-  return UDR;
+  while (!(UCSR0A & (1 << RXC0)));
+  return UDR0;
 }
 
 void put(uint8_t dat)
 {
-  while (!(UCSRA & (1 << UDRE)));
+  while (!(UCSR0A & (1 << UDRE0)));
 
-  if (UCSRA & ((1<<FE)|(1<<DOR)|(1<<PE))) {
-    UDR = NACK;
+  if (UCSR0A & ((1<<FE0)|(1<<DOR0)|(1<<UPE0))) {
+    UDR0 = NACK;
     restart();
   } else {
-    UDR = dat;
+    UDR0 = dat;
   }
 }
 
@@ -110,26 +110,26 @@ int main()
 {
   volatile uint8_t check = BOOT_SPM_CHECK_VAL;
 
-  if (UCSRB & (1 << TXEN)) {
+  if (UCSR0B & (1 << TXEN0)) {
     /* Seems like we jumped here from firmware.
      * We will not reinitialize UART to keep the
      * same BAUD rate, but we have to flush it. */
     sei();
-    while (UCSRB & (1 << UDRIE));
-    while (!(UCSRA & (1 << UDRE)));
-    while (!(UCSRA & (1 << TXC)));
+    while (UCSR0B & (1 << UDRIE0));
+    while (!(UCSR0A & (1 << UDRE0)));
+    while (!(UCSR0A & (1 << TXC0)));
   } else {
     #include <util/setbaud.h>
-    UBRRH = UBRRH_VALUE;
-    UBRRL = UBRRL_VALUE;
+    UBRR0H = UBRRH_VALUE;
+    UBRR0L = UBRRL_VALUE;
     #if USE_2X
-    UCSRA |=  (1 << U2X);
+    UCSR0A |=  (1 << U2X0);
     #else
-    UCSRA &= ~(1 << U2X);
+    UCSR0A &= ~(1 << U2X0);
     #endif
-    UCSRC = (1 << URSEL) | (3 << UCSZ0);
-    UCSRB = (1 << RXCIE) | (1 << RXEN) | (1 << TXEN);
-    while (!(UCSRA & (1 << UDRE)));
+    UCSR0C = (3 << UCSZ00);
+    UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
+    while (!(UCSR0A & (1 << UDRE0)));
   }
   
   cli();
@@ -183,7 +183,8 @@ int main()
   
   /* bootloader sign, so fw knows that it was valid restart */
   PROGMEM static const uint8_t sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
-  memcpy_P((char *)0x60, sign, sizeof(sign));
+  extern uint8_t __data_start;
+  memcpy_P(&__data_start, sign, sizeof(sign));
 
   put(ACK);
   restart();
