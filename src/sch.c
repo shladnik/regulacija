@@ -57,5 +57,15 @@ void sch()
       last_sch_func = 0;
 #endif
     }
+
+    set_sleep_mode(SLEEP_MODE_IDLE);
+    cli();
+    if (queue[rp] == 0 && exexec_func == 0) {
+      sleep_enable();
+      sei();
+      sleep_cpu();
+      sleep_disable();
+    }
+    sei();
   }
 }
