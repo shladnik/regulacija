@@ -25,9 +25,7 @@ int main()
   watchdog_start();
   keys_init();
 
-  while (1) {
-    sch();
-  }
+  sch();
 
   return 0;
 }
