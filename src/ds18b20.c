@@ -263,15 +263,16 @@ temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
 #endif
 }
 
-USED void ds18b20_get_temp_tab(volatile DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp_t * p_tab)
+USED void ds18b20_get_temp_tab(DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp_t * p_tab)
 {
+  const timer_t initial_rst_time = TIMER_MS(10);
   /* parameters and variables used has to be vloatile cause of setjmp/longjmp */
   volatile DS18B20    nr       = p_nr;
   volatile RESOLUTION v_r      = p_r;
   volatile uint8_t    v_rty    = p_rty;
-  volatile temp_t *   tab      = p_tab;
+  temp_t * volatile   tab      = p_tab;
   volatile uint8_t    try      = 0;
-  volatile timer_t    rst_time = TIMER_MS(10);
+  volatile timer_t    rst_time = initial_rst_time;
   /* setjmp */
   jmp_buf tmp_eh;
   assert(ds18b20_err_handler == 0);
@@ -329,6 +330,7 @@ USED void ds18b20_get_temp_tab(volatile DS18B20 p_nr, RESOLUTION p_r, uint8_t p_
       tab++;
       nr--;
       try = 0;
+      rst_time = initial_rst_time;
     }
   }
   
