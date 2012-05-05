@@ -98,8 +98,8 @@ bool in_range(timer_t s, timer_t val, timer_t e)
 {
   bool if0 = val >= s;
   bool if1 = val <  e;
-  return s <= e ? if0 && if1 :
-                  if0 || if1;
+  return s < e ? if0 && if1 :
+                 if0 || if1;
 }
 
 void timer_set(timer_t cmp)
@@ -111,13 +111,7 @@ void timer_set(timer_t cmp)
   TIFR1 = 1 << OCIE1A;
   timer_t now = timer_now();
 
-  if (in_range(tracked, cmp, now)) {
-#ifndef NDEBUG
-    DBG static uint8_t timer_late_cnt;
-    DBG static timer_t timer_late_max;
-    timer_late_cnt++;
-    timer_late_max = MAX(timer_late_max, now - tracked);
-#endif
+  if (in_range(tracked, cmp, now + 1)) {
     TIMER1_COMPA_vect_trigger();
     TIMSK1 |= 1 << OCIE1A;
   } else {

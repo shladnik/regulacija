@@ -36,6 +36,16 @@ void timer_int()
   slot_t c = slot[first];
   slot[first].next = MAX_TIMERS;
 
+#ifndef NDEBUG
+  timer_t now = timer_now();
+  if (in_range(timer_tracked_get(), c.cmp, now)) {
+    DBG static uint8_t timer_late_cnt;
+    DBG static timer_t timer_late_max;
+    timer_late_cnt++;
+    timer_late_max = MAX(timer_late_max, now - c.cmp);
+  }
+#endif
+
   if (c.next == first) {
     first = MAX_TIMERS;
     timer_unset();
@@ -126,7 +136,7 @@ void timer_add_cmp(timer_t cmp, void (*func)(), void * arg, uint8_t level)
     ptr_t n = first;
     
     timer_t now = timer_tracked_get();
-    while (p != n && !in_range(now, cmp, slot[n].cmp)) {
+    while (p != n && in_range(now, slot[n].cmp, cmp + 1)) {
       p = n;
       n = slot[n].next;
     }
