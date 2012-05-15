@@ -52,7 +52,7 @@ cflags = (
 "-mcall-prologues",
 "-fshort-enums",
 #"-combine",
-#"-fwhole-program",
+"-fwhole-program",
 "-fno-split-wide-types",
 "-funsigned-char",
 "-flto",
