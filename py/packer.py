@@ -28,16 +28,20 @@ def unpack(f):
   f.extractall()
 
 def getfile(f, fn):
-  if type(f) == str: f = tarfile.open(name = f, mode='r:bz2')
-  else:              f = tarfile.open(fileobj = f)
-  if fn in f.getnames(): return f.extractfile(fn)
-  else                 : return None
+  try:
+    if type(f) == str: f = tarfile.open(name = f, mode='r:bz2')
+    else:              f = tarfile.open(fileobj = f)
+    if fn in f.getnames(): return f.extractfile(fn)
+    else                 : return None
+  except Exception as e:
+    print("Failed to get {} in {}: {}" % fn, f, e)
+    return None
 
 def update(a):
   if type(a) == str: a = tarfile.open(a, mode='r:bz2')
   else:              a = tarfile.open(fileobj = a, mode='r|bz2')
 
-  a.extractall()
+  a.extractall() # TODO: local update, remote update?
   names = a.getnames()
   if "bootloader.bin" in names or "fw.bin" in names:
     gumi = gum.Gum()
