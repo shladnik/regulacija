@@ -195,7 +195,12 @@ __attribute__((naked, used))
 __attribute__((section(".jmp")))
 void jmp() 
 {
+#if 1
   extern void __vectors();
   __vectors();
+#else
+  extern uint8_t __vectors;
+  ((func_t)&__vectors)();
+#endif
 }
 
