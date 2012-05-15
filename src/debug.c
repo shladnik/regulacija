@@ -6,7 +6,7 @@ void log_adr()
   const uint8_t log_len = sizeof(adr_log) / sizeof(adr_log[0]);
   for (uint8_t i = 0; i < log_len - 1; i++)
     adr_log[i] = adr_log[i+1];
-  adr_log[log_len-1] = (uintptr_t)__builtin_return_address(0);
+  adr_log[log_len-1] = __builtin_return_address(0);
 #endif
 }
 
@@ -24,7 +24,7 @@ void __assert()
   DBG static void *  assert_log [4];
 
   const uint8_t log_len = sizeof(assert_log) / sizeof(assert_log[0]);
-  assert_log[MIN(assert_cnt, log_len - 1)] = (uintptr_t)__builtin_return_address(0);
+  assert_log[MIN(assert_cnt, log_len - 1)] = __builtin_return_address(0);
   if (assert_cnt < (typeof(assert_cnt))-1) assert_cnt++;
   watchdog_mcu_reset();
 }
