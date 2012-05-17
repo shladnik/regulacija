@@ -90,7 +90,7 @@ class Gum():
       pickled_meta = packer.getfile(sw, 'meta')
       if pickled_meta: return pickle.load(pickled_meta)
       else           : return None
-    
+
     meta_latest  = None
     build_latest = bytearray(8)
     metafs = tuple([lambda: meta]) + tuple(map(lambda x: lambda: sw2meta(x), sws))
@@ -381,7 +381,7 @@ class Gum():
     return self.exexec("valve_get", [ i ])[0]
   
   def relay_get(self, i):
-    return self.exexec("relay_get", [ i ])[0]
+    return self.exexec("relay_get", [ i ])[0] & 0xff
   
   
   
