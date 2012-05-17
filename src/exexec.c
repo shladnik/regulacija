@@ -1,5 +1,5 @@
 uint64_t exexec_buf;
-DBG2CP exexec_func_t exexec_func;
+DBG2CP volatile exexec_func_t exexec_func;
 
 void exexec()
 {
@@ -9,7 +9,7 @@ void exexec()
     func = exexec_func;
   }
 
-  if (func) {
+  if (func) { // TODO limit executable space?
 #ifndef NDEBUG
     DBG2CP static exexec_func_t last_exexec;
     DBG2CP static uint64_t      last_exexec_arg;
