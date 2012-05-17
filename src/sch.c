@@ -1,8 +1,8 @@
 #define SCH_QUEUE_LEN 16
 
-static volatile func_t queue[SCH_QUEUE_LEN] = { 0 };
-static uint8_t wp = 0;
-static uint8_t rp = 0;
+static volatile sch_t queue[SCH_QUEUE_LEN];
+static uint8_t wp;
+static uint8_t rp;
 
 static uint8_t pinc(uint8_t p)
 {
@@ -16,15 +16,21 @@ static uint8_t level()
   return (wp < rp ? SCH_QUEUE_LEN : 0) + wp - rp;
 }
 
-void sch_add(func_t func /*, uint8_t level*/)
+void sch_add(sch_t e)
 {
   DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
-    DBG2CP static func_t last_sch_add_func;
-    last_sch_add_func = func;
-    assert(queue[wp] == 0);
-    queue[wp] = func;
-    wp = pinc(wp);
+#if PLAIN_CONSOLE
+      printf("sch_add:%x(%x)\n", e.func, e.arg);
+#endif
+    DBG2CP_VAR(last_sch_add, e);
+    if (e.level == (typeof(e.level))-1) {
+      e.func(e.arg);
+    } else {
+      assert(queue[wp].func == 0);
+      queue[wp] = e;
+      wp = pinc(wp);
+    }
   }
 }
 
@@ -32,35 +38,29 @@ void sch()
 {
   while (1) {
     if (level() <= SCH_QUEUE_LEN / 2) exexec();
-    
-    if (queue[rp]) {
-      func_t func = queue[rp];
+    sch_t e = queue[rp];
+    if (e.func) {
       DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
       {
-        queue[rp] = 0;
+        queue[rp].func = 0;
       }
       rp = pinc(rp);
 #ifdef NDEBUG
-      func();
+      e.func(e.arg);
 #else
-      DBG2CP static func_t last_sch_func;
-      last_sch_func = func;
-      timer_t start = timer_now();
-      func();
-      timer_t dly = timer_now() - start;
-      DBG static timer_t max_dly;
-      DBG static func_t max_func;
-      if (max_dly < dly) {
-        max_dly = dly;
-        max_func = func;
-      }
-      last_sch_func = 0;
+#if PLAIN_CONSOLE
+      printf("sch:%x(%x)\n", e.func, e.arg);
+#endif
+      DBG2CP static sch_t last_sch; last_sch = e;
+      e.func(e.arg);
+      last_sch = (sch_t){ 0, 0, 0 };
 #endif
     }
-
+    
+    // TODO watchdog & utilization
     set_sleep_mode(SLEEP_MODE_IDLE);
     cli();
-    if (queue[rp] == 0 && exexec_func == 0) {
+    if (queue[rp].func == 0 && exexec_func == 0) {
       sleep_enable();
       sei();
       sleep_cpu();

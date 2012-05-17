@@ -23,8 +23,7 @@ static uint8_t pinc(uint8_t p)
 void send(pac_t p)
 {
 #ifndef NDEBUG
-  DBG static uint8_t tx_busy;
-  if    (wp == rp && (UCSR0B & (1 << UDRIE0)) && (tx_busy < (typeof(tx_busy))-1)) tx_busy++;
+  if (wp == rp && (UCSR0B & (1 << UDRIE0))) DBG_CNT_CLIP(tx_busy);
 #endif
   while (wp == rp && (UCSR0B & (1 << UDRIE0)));
   tx_queue[wp] = p;
@@ -49,12 +48,12 @@ void rx_timeout()
   rx_timer = 0;
   if (!(UCSR0A & (1 << RXC0))) {
 #ifndef NDEBUG
-    DBG static uint8_t rx_timeout;
-    if (rx_timeout < (typeof(rx_timeout))-1) rx_timeout++;
+    DBG_CNT_CLIP(rx_timeout_cnt);
 #endif
     rx_reset();
   }
 }
+const sch_t rx_timeout_sch = { rx_timeout, 0, (uint8_t)-1 };
 
 DBG_ISR(USART_RX_vect, ISR_BLOCK)
 {
@@ -64,15 +63,14 @@ DBG_ISR(USART_RX_vect, ISR_BLOCK)
 #else
   if (rx_timer) {
     rx_timer = 0;
-    timer_cancel(rx_timeout, 0);
+    timer_cancel(rx_timeout_sch, 1); //assert
   }
 
   bool err = 0;
 
   if (UCSR0A & ((1<<FE0)|(1<<DOR0)|(1<<UPE0))) {
 #ifndef NDEBUG
-    DBG static uint8_t rx_ovf;
-    if (rx_ovf < (typeof(rx_ovf))-1) rx_ovf++;
+    DBG_CNT_CLIP(rx_ovf);
 #endif
     err = 1;
   } else {
@@ -145,13 +143,12 @@ DBG_ISR(USART_RX_vect, ISR_BLOCK)
  
   if (err) {
 #ifndef NDEBUG
-    DBG static uint8_t rx_err;
-    if (rx_err < (typeof(rx_err))-1) rx_err++;
+    DBG_CNT_CLIP(rx_err);
 #endif
     rx_reset();
   } else if (rx_state != ADR_SIZE && !(UCSR0A & (1 << RXC0))) {
     rx_timer = 1;
-    timer_add(TIMER_MS(100), rx_timeout, 0, -1);
+    timer_add(TIMER_MS(100), rx_timeout_sch);
   }
 #endif
 }

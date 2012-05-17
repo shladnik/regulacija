@@ -1,5 +1,8 @@
 void log_adr()
 {
+#if PLAIN_CONSOLE
+  printf("log_adr:%x\n", __builtin_return_address(0));
+#endif
 #ifndef NDEBUG
   DBG2CP static volatile void *  adr_log [4];
 
@@ -20,6 +23,9 @@ __attribute__((always_inline)) void __assert()
 #else
 void __assert()
 {
+#if PLAIN_CONSOLE
+  printf("assert:%x\n", __builtin_return_address(0));
+#endif
   DBG static uint8_t assert_cnt;
   DBG static void *  assert_log [4];
 
@@ -70,6 +76,18 @@ USED void debug_init()
   for (uint8_t * i = &__dbg_start; i < &__dbg_end; i++) *i = 0x00;
 }
 
+USED void dbg2cp_copy()
+{
+  extern uint8_t __dbg2cp_start;
+  extern uint8_t __dbg2cp_end;
+  extern uint8_t __dbgcp_start;
+  uintptr_t offset = &__dbgcp_start - &__dbg2cp_start;
+  DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    DBG_VAR(dbg2cp_time, timer_now());
+    for (uint8_t * i = &__dbg2cp_start; i < &__dbg2cp_end; i++) *(i + offset) = *i;
+  }
+}
+
 __attribute__((section(".init3"), naked, used))
 void debug()
 {
@@ -90,22 +108,16 @@ void debug()
     debug_init();
   } else {
     if (rst_src & (1 << WDRF)) {
-      DBG static uint8_t wdrf_cnt;
-      wdrf_cnt++;
+      DBG_CNT(wdrf_cnt);
     } else {
-      DBG static uint8_t reboot_cnt;
-      reboot_cnt++;
+      DBG_CNT(reboot_cnt);
     }
- 
-    extern uint8_t __dbg2cp_start;
-    extern uint8_t __dbg2cp_end;
-    extern uint8_t __dbgcp_start;
-    uintptr_t offset = &__dbgcp_start - &__dbg2cp_start;
-    for (uint8_t * i = &__dbg2cp_start; i < &__dbg2cp_end; i++) *(i + offset) = *i;
+
+    dbg2cp_copy();
   }
- 
-  DBG static uint8_t rst_src_last, rst_src_all;
-  rst_src_last = rst_src;
+
+  DBG_VAR(rst_src_last, rst_src);
+  DBG static uint8_t  rst_src_all;
   rst_src_all |= rst_src;
 }
 

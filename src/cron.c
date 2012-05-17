@@ -6,16 +6,14 @@ typedef struct {
   uint8_t  weekday;
   uint8_t  day;
   uint8_t  month;
-  func_t   func;
-  uint16_t arg;
+  sch_func_t   func;
+  void *   arg;
   uint8_t  repeat;
 } cron_t;
 
-typedef void (*cron_func_t)(uint16_t);
-
 CONFIG cron_t crons [MAX_CRONS] = {
-{  0,  2,  6, 30,  2, (cron_func_t)daylight_saving, +1, -1 },
-{  0,  3,  6, 30,  9, (cron_func_t)daylight_saving, -1, -1 }, // TODO this should happen only once per year (or day or whatever) - currently it will loop!
+{  0,  2,  6, 30,  2, (sch_func_t)daylight_saving, (void *)+1, -1 },
+{  0,  3,  6, 30,  9, (sch_func_t)daylight_saving, (void *)-1, -1 }, // TODO this should happen only once per year (or day or whatever) - currently it will loop!
 };
 
 void cron()
@@ -50,7 +48,7 @@ void cron()
       c.func(c.arg);
       
       if (c.repeat) {
-        if (c.repeat != (uint8_t)-1) {
+        if (c.repeat != (typeof(c.repeat))-1) {
           c.repeat--;
           CONFIG_SET(crons[i].repeat, c.repeat);
         }

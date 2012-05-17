@@ -54,7 +54,7 @@ void valve_stop(VALVE i)
 
 void valve_refresh(VALVE i)
 {
-  valve_state_t now = timer_now() / VALVE_TIMESCALE;
+  valve_state_t now = timer_tracked_get() / VALVE_TIMESCALE;
 
   if (relay_get(RELAY_EN(i))) {
     valve_state_t amount = now - valve_tab[i].last_update;
@@ -77,7 +77,8 @@ void valve_stop_cb(void * arg)
 
 void valve_control(VALVE i)
 {
-  timer_cancel(valve_stop_cb, (void *)(uintptr_t)i);
+  const sch_t valve_stop_cb_sch = { valve_stop_cb, (void *)(uintptr_t)i, -1 };
+  timer_cancel(valve_stop_cb_sch, 1);
 
   bool dir = valve_tab[i].state < valve_tab[i].goal;
   valve_state_t amount;
@@ -90,7 +91,7 @@ void valve_control(VALVE i)
   if (amount > VALVE_MIN_MOVE) {
     if (dir) valve_open (i);
     else     valve_close(i);
-    timer_add((timer_t)amount * VALVE_TIMESCALE, valve_stop_cb, (void *)(uintptr_t)i, -1);
+    timer_add((timer_t)amount * VALVE_TIMESCALE, valve_stop_cb_sch);
   } else {
     valve_stop(i);
   }
@@ -98,20 +99,20 @@ void valve_control(VALVE i)
 
 void valve_open_for(VALVE i, valve_state_t amount)
 {
-  if (valve_tab[i].goal < VALVE_STATE_MAX) {
+  //if (valve_tab[i].goal < VALVE_STATE_MAX) { TODO: this is disabled now for safety reasond
     valve_state_t curr = valve_get(i);
     valve_tab[i].goal = VALVE_STATE_MAX - curr < amount ? VALVE_STATE_MAX : curr + amount;
     valve_control(i);
-  }
+  //}
 }
 
 void valve_close_for(VALVE i, valve_state_t amount)
 {
-  if (valve_tab[i].goal > VALVE_STATE_MIN) {
+  //if (valve_tab[i].goal > VALVE_STATE_MIN) {
     valve_state_t curr = valve_get(i);
     valve_tab[i].goal =                   curr < amount ? VALVE_STATE_MIN : curr - amount;
     valve_control(i);
-  }
+  //}
 }
 
 USED valve_state_t valve_get(VALVE i)

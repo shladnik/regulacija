@@ -115,7 +115,7 @@ void clock_loop()
         }
       }
 
-      sch_add(cron);
+      sch_add((sch_t){ cron, 0, 0 });
     }
   }
 }

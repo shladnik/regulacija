@@ -115,10 +115,11 @@ void timer_set(timer_t cmp)
     TIMER1_COMPA_vect_trigger();
     TIMSK1 |= 1 << OCIE1A;
   } else {
-    cmp_high = cmp >> 16;
-    if (cmp_high == high) {
+    uint16_t msw = cmp >> 16;
+    if (msw == high) {
       TIMSK1 |= 1 << OCIE1A;
     } else {
+      cmp_high = msw;
       en = 1;
     }
   }

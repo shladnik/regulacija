@@ -5,29 +5,30 @@ typedef uint8_t ptr_t;
 typedef struct {
   ptr_t next;
   timer_t cmp;
-  func_t func;
-  void * arg;
-  uint8_t level;
+  sch_t func;
 } slot_t;
 
-static slot_t slot [MAX_TIMERS];
-static ptr_t first = MAX_TIMERS;
-static timer_t timer_tracked;
+DBG2CP static slot_t slot [MAX_TIMERS];
+DBG2CP static ptr_t first;
+DBG2CP static timer_t timer_tracked;
 
 void timer_init()
 {
+  first = MAX_TIMERS;
   for (ptr_t i = 0; i < MAX_TIMERS; i++) slot[i].next = MAX_TIMERS;
   timer_start();
 }
 
-void timer_tracked_set(timer_t t)
-{
-  timer_tracked = t;
-}
-
 timer_t timer_tracked_get()
 {
-  if (first == MAX_TIMERS) timer_tracked = timer_now();
+  timer_t now = timer_now();
+  if (first == MAX_TIMERS || in_range(timer_tracked, now, slot[first].cmp + 1))
+    timer_tracked = now;
+  else {
+    DBG static timer_t timer_late_max_0;
+    timer_late_max_0 = MAX(timer_late_max_0, now - timer_tracked);
+  }
+
   return timer_tracked;
 }
 
@@ -39,9 +40,7 @@ void timer_int()
 #ifndef NDEBUG
   timer_t now = timer_now();
   if (in_range(timer_tracked_get(), c.cmp, now)) {
-    DBG static uint8_t timer_late_cnt;
     DBG static timer_t timer_late_max;
-    timer_late_cnt++;
     timer_late_max = MAX(timer_late_max, now - c.cmp);
   }
 #endif
@@ -50,23 +49,12 @@ void timer_int()
     first = MAX_TIMERS;
     timer_unset();
   } else {
-    timer_tracked_set(c.cmp);
+    timer_tracked = c.cmp;
     first = c.next;
     timer_set(slot[first].cmp);
   }
   
-  if (c.level == (uint8_t)(-1)) {
-#ifdef NDEBUG
-    c.func(c.arg);
-#else
-    DBG2CP static func_t last_timer_func;
-    last_timer_func = c.func;
-    c.func(c.arg);
-    last_timer_func = 0;
-#endif
-  } else {
-    sch_add(c.func);
-  }
+  sch_add(c.func);
 }
 
 void slot_insert(ptr_t p, ptr_t c)
@@ -91,9 +79,9 @@ void slot_insert(ptr_t p, ptr_t c)
   }
 }
 
-void slot_remove(ptr_t p, ptr_t c)
+ptr_t slot_remove(ptr_t p, ptr_t c)
 {
-  bool isFirst = c == first;
+  bool isFirst = p == MAX_TIMERS;
   bool isLast  = c == slot[c].next;
   bool isOnly  = isFirst && isLast;
   
@@ -114,9 +102,10 @@ void slot_remove(ptr_t p, ptr_t c)
   }
 
   slot[c].next = MAX_TIMERS;
+  return isFirst ? first : slot[p].next;
 }
 
-void timer_add_cmp(timer_t cmp, void (*func)(), void * arg, uint8_t level)
+void timer_add_cmp(timer_t cmp, sch_t func)
 {
   DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     /* find empty slot */
@@ -126,10 +115,8 @@ void timer_add_cmp(timer_t cmp, void (*func)(), void * arg, uint8_t level)
       assert(c < MAX_TIMERS);
     }
 
-    slot[c].cmp   = cmp;
-    slot[c].func  = func;
-    slot[c].arg   = arg;
-    slot[c].level = level;
+    slot[c].cmp  = cmp;
+    slot[c].func = func;
 
     /* find position */
     ptr_t p = MAX_TIMERS;
@@ -146,29 +133,31 @@ void timer_add_cmp(timer_t cmp, void (*func)(), void * arg, uint8_t level)
   }
 }
 
-void timer_add(timer_t cnt, void (*func)(), void * arg, uint8_t level)
+void timer_add(timer_t cnt, sch_t func)
 {
   DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-    timer_t cmp = timer_now() + cnt;
-    timer_add_cmp(cmp, func, arg, level);
+    timer_t cmp = timer_tracked_get() + cnt;
+    timer_add_cmp(cmp, func);
   }
 }
 
-void timer_cancel(void (*func)(), void * arg)
+ptr_t timer_cancel(sch_t func, ptr_t nr)
 {
+  ptr_t cnt = 0;
   ptr_t p = MAX_TIMERS;
   DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     ptr_t c = first;
-    while (p != c && c != MAX_TIMERS) {
-      /* I think this cancels only first slot found */
-      if (slot[c].func == func && slot[c].arg == arg) {
-        slot_remove(p, c);
+    while (p != c) {
+      if (memcmp(&func, &slot[c].func, sizeof(sch_t)) == 0) {
+        c = slot_remove(p, c);
+        if (++cnt >= nr) break;
       } else {
         p = c;
+        c = slot[c].next;
       }
-      c = slot[c].next;
     }
   }
+  return cnt;
 }
 
 void timer_sleep_ticks(timer_t t)
@@ -177,22 +166,3 @@ void timer_sleep_ticks(timer_t t)
   timer_t end   = start + t;
   while (in_range(start, timer_now(), end));
 }
-
-uint8_t timer_count(func_t func)
-{
-  uint8_t cnt = 0;
-  ptr_t c = first;
-
-  if (c >= MAX_TIMERS) return 0;
-
-  if (slot[c].func == func) cnt++;
-
-  while (c != slot[c].next) {
-    c = slot[c].next;
-    assert(c <= MAX_TIMERS);
-    if (slot[c].func == func) cnt++;
-  }
-
-  return cnt;
-}
-

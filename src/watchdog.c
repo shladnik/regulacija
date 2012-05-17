@@ -5,18 +5,8 @@ static uint8_t timeout_cnt;
 void watchdog_reseter()
 {
   wdt_reset();
-
   timeout_cnt++;
   assert(timeout_cnt < (timeout / reseter_dly));
-
-  static timer_t prev = 0;
-  timer_t next = prev + reseter_dly;
-  timer_add_cmp(next, watchdog_reseter, 0, -1);
-#ifndef NDEBUG
-  timer_t now = timer_now();
-  assert(in_range(prev, now, next));
-#endif
-  prev = next;
 }
 
 void watchdog_loop()
@@ -42,7 +32,6 @@ void watchdog_loop()
 void watchdog_start()
 {
   wdt_enable(WDTO_2S);
-  watchdog_reseter();
 }
 
 __attribute__((noreturn)) void watchdog_mcu_reset()

@@ -1,39 +1,40 @@
 typedef struct {
-  const func_t func;
-  const timer_t dly;
+  const sch_t func;
+  const timer_t period;
 } loop_t;
 
-const loop_t loop [] PROGMEM = {
+const loop_t loops [] PROGMEM = {
 #ifdef LOOP_CLOCK
-  { clock_loop    , TIMER_S(CLOCK_LOOP_PERIOD) },
+  { { clock_loop      , 0,  0 }, TIMER_S(CLOCK_LOOP_PERIOD) },
 #endif
-  { lcd_loop      , TIMER_S(10)  },
-  { pumping_loop  , TIMER_MIN(1) },
-  { collector_loop, TIMER_S(30)  },
-  { furnace_loop  , TIMER_S(10)  },
-  { radiator_loop , TIMER_S(10)  },
-//  { radiator_loop_new, TIMER_MIN(3) },
+  { { watchdog_reseter, 0, -1 }, WATCHDOG_RESETER_PERIOD    },
+  { { lcd_loop        , 0,  0 }, TIMER_S(10)                },
+  { { pumping_loop    , 0,  0 }, TIMER_MIN(1)               },
+  { { collector_loop  , 0,  0 }, TIMER_S(30)                },
+  { { furnace_loop    , 0,  0 }, TIMER_S(10)                },
+  { { radiator_loop   , 0,  0 }, TIMER_S(10)                },
+  { { watchdog_loop   , 0,  0 }, TIMER_S(25)                },
 };
 
-#define LOOP_NR (sizeof(loop)/sizeof(loop_t))
+#define LOOP_NR (sizeof(loops)/sizeof(loop_t))
 
 static timer_t loop_next [LOOP_NR];
 
 static void loop_handler(void * arg)
 {
   uint8_t i = (uint16_t)arg;
-  sch_add((func_t)pgm_read_word(&loop[i].func));
-  timer_t next = loop_next[i] + pgm_read_dword(&loop[i].dly);
-  timer_add_cmp(next, loop_handler, arg, -1);
+  loop_t l; memcpy_P(&l, &loops[i], sizeof(loop_t));
+  timer_t prev = loop_next[i];
+  
+  sch_add(l.func);
+
+  timer_t next = prev + l.period;
+  timer_add_cmp(next, (sch_t){ loop_handler, arg, (typeof(l.func.level))-1 });
+  assert(in_range(prev, timer_now(), next));
   loop_next[i] = next;
 }
 
 void loops_start()
 {
-  for (uint8_t i = 0; i < LOOP_NR; i++) loop_handler((void *)(uint16_t)i);
-}
-
-void loops_check()
-{
-  assert(LOOP_NR == timer_count(loop_handler));
+  for (uint8_t i = 0; i < LOOP_NR; i++) sch_add((sch_t){ loop_handler, (void *)(uintptr_t)i, (uint8_t)-1 });
 }

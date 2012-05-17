@@ -18,12 +18,15 @@ int main()
   print_buf_init();
 #endif
   uart_init();
+#if PLAIN_CONSOLE
+  printf("Console up.\n");
+#endif
   relay_off_all();
   valve_init();
   lcd_init();
-  loops_start();
-  watchdog_start();
   keys_init();
+  watchdog_start();
+  loops_start();
 
   sch();
 
