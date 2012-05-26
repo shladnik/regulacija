@@ -28,13 +28,12 @@ void log_adr();
   
 #if 1
   #define DBG_ISR(vector, ...) \
-    void vector##_real(); \
+    void vector##_real();      \
     ISR(vector, __VA_ARGS__) { \
-      extern ISR(TIMER1_OVF_vect); \
-      log_adr(); \
-      vector##_real(); \
-      log_adr(); \
-    } \
+      log_adr();               \
+      vector##_real();         \
+      log_adr();               \
+    }                          \
     void vector##_real()
 #else
   #define DBG_ISR           ISR
