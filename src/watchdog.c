@@ -1,15 +1,20 @@
-static const timer_t reseter_dly = TIMER_S(1.);
-static const timer_t timeout = TIMER_MIN(2.);
-static uint8_t timeout_cnt;
+static const timer_t reseter_dly  = TIMER_S(1);
+static const timer_t syscheck_dly = TIMER_MIN(2);
+static const timer_t schcheck_dly = TIMER_S(30);
+static uint8_t syscheck;
+       uint8_t schcheck;
 
 void watchdog_reseter()
 {
   wdt_reset();
-  timeout_cnt++;
-  assert(timeout_cnt < (timeout / reseter_dly));
+  DBG2CP_VAR(last_wdt_reset, timer_now());
+  syscheck++;
+  assert(syscheck < (syscheck_dly / reseter_dly));
+  schcheck++;
+  assert(schcheck < (schcheck_dly / reseter_dly));
 }
 
-void watchdog_loop()
+void syscheck_loop()
 {
   enum {
     FURNACE,
@@ -26,7 +31,7 @@ void watchdog_loop()
 
   if (tab[FURNACE  ] < TEMP(95) &&
       tab[COLLECTOR] < TEMP(95))
-    timeout_cnt = 0;
+    syscheck = 0;
 }
 
 void watchdog_start()

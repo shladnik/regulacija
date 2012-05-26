@@ -37,7 +37,10 @@ void sch_add(sch_t e)
 void sch()
 {
   while (1) {
+    schcheck = 0;
+
     if (level() <= SCH_QUEUE_LEN / 2) exexec();
+
     sch_t e = queue[rp];
     if (e.func) {
       DBG_ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
@@ -57,7 +60,6 @@ void sch()
 #endif
     }
     
-    // TODO watchdog & utilization
     set_sleep_mode(SLEEP_MODE_IDLE);
     cli();
     if (queue[rp].func == 0 && exexec_func == 0) {
