@@ -26,12 +26,20 @@ class macrodump():
     offset = int(list(filter(lambda x: x[0] == "__SFR_OFFSET", out))[0][1], 16)
     regs1 = filter(lambda x: x[1][0: 9] == "_SFR_IO8(" , out)
     regs2 = filter(lambda x: x[1][0:10] == "_SFR_IO16(", out)
+    regs3 = filter(lambda x: x[1][0:10] == "_SFR_MEM8(" , out)
+    regs4 = filter(lambda x: x[1][0:11] == "_SFR_MEM16(", out)
     regs1 = map(lambda x: [ x[0], int(x[1][ 9:-1], 16) + offset ], regs1)
     regs2 = map(lambda x: [ x[0], int(x[1][10:-1], 16) + offset ], regs2)
+    regs3 = map(lambda x: [ x[0], int(x[1][10:-1], 16)          ], regs3)
+    regs4 = map(lambda x: [ x[0], int(x[1][11:-1], 16)          ], regs4)
     regs = dict()
     for r in regs1:
       regs[r[0]] = { 'adr' : r[1], 'size' : 1, 'mem' : 'reg', 'section' : None }
     for r in regs2:
+      regs[r[0]] = { 'adr' : r[1], 'size' : 2, 'mem' : 'reg', 'section' : None }
+    for r in regs3:
+      regs[r[0]] = { 'adr' : r[1], 'size' : 1, 'mem' : 'reg', 'section' : None }
+    for r in regs4:
       regs[r[0]] = { 'adr' : r[1], 'size' : 2, 'mem' : 'reg', 'section' : None }
 
     return regs
