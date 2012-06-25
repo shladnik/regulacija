@@ -11,14 +11,17 @@
   #define DBG_ATOMIC_BLOCK  ATOMIC_BLOCK
 #else
 
-#define DBG_CNT(d)          do { DBG    static uint8_t d; d++;                        } while(0)
-#define DBG_CNT_CLIP(d)     do { DBG    static uint8_t d; if (d < (typeof(d))-1) d++; } while(0)
-#define DBG_VAR(d, v)       do { DBG    static typeof(v) d; d = v;                    } while(0)
-#define DBG_MAX(d, v)       do { DBG    static typeof(v) d; d = MAX(v, d);            } while(0)
-#define DBG_LOG(d, v, l)    do { DBG    static typeof(v) d [l]; memmove(&d, &d[1], sizeof(d) - sizeof(d[0])); d[l-1] = v; } while(0)
-#define DBG2CP_VAR(d, v)    do { DBG2CP static typeof(v) d; d = v;                    } while(0)
-#define DBG2CP_LOG(d, v, l) do { DBG2CP static typeof(v) d [l]; memmove(&d, &d[1], sizeof(d) - sizeof(d[0])); d[l-1] = v; } while(0)
+#define DBG_CNT(d)              do { DBG    static uint8_t d; d++;                        } while(0)
+#define DBG_CNT_CLIP(d)         do { DBG    static uint8_t d; if (d < (typeof(d))-1) d++; } while(0)
+#define DBG_VAR(d, v)           do { DBG    static typeof(v) d; d = v;                    } while(0)
+#define DBG_MAX(d, v)           do { DBG    static typeof(v) d; d = MAX(v, d);            } while(0)
+#define DBG_LOG(d, v, l)        do { DBG    static typeof(v) d [l]; memmove(&d, &d[1], sizeof(d) - sizeof(d[0])); d[l-1] = v; } while(0)
+#define DBG_LOG_FINITE(d, v, l) do { DBG    static typeof(v) d [l]; DBG static uint8_t i = 0; if (i < l) { d[i] = v; i++; }   } while(0)
+#define DBG2CP_VAR(d, v)        do { DBG2CP static typeof(v) d; d = v;                    } while(0)
+#define DBG2CP_LOG(d, v, l)     do { DBG2CP static typeof(v) d [l]; memmove(&d, &d[1], sizeof(d) - sizeof(d[0])); d[l-1] = v; } while(0)
 
+void isr_enter();
+void isr_exit();
 void log_adr();
 
 #define DBG_COPY(name) \
@@ -33,9 +36,9 @@ void log_adr();
   #define DBG_ISR(vector, ...) \
     void vector##_real();      \
     ISR(vector, __VA_ARGS__) { \
-      log_adr();               \
+      isr_enter();             \
       vector##_real();         \
-      log_adr();               \
+      isr_exit();              \
     }                          \
     void vector##_real()
 #else

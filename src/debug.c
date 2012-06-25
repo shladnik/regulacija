@@ -1,40 +1,44 @@
+INLINE void isr_enter()
+{
+  DBG2CP_LOG(isr_return, __builtin_return_address(0), 8);
+  log_adr();
+}
+
+INLINE void isr_exit()
+{
+  log_adr();
+}
+
 void log_adr()
 {
+#ifndef NDEBUG
 #if PLAIN_CONSOLE
   printf("log_adr:%x\n", __builtin_return_address(0));
 #endif
-#ifndef NDEBUG
-  DBG2CP static volatile void *  adr_log [4];
+  DBG2CP_LOG(adr_log, __builtin_return_address(0), 8);
 
-  const uint8_t log_len = sizeof(adr_log) / sizeof(adr_log[0]);
-  for (uint8_t i = 0; i < log_len - 1; i++)
-    adr_log[i] = adr_log[i+1];
-  adr_log[log_len-1] = __builtin_return_address(0);
+  DBG2CP_VAR(adr_time, timer_now());
+  extern uint8_t __heap_start;
+  DBG2CP static int16_t adr_free; adr_free = (int16_t)SP - (int16_t)&__heap_start;
+  DBG static typeof(adr_free) adr_free_min; adr_free_min = adr_free_min ? MIN(adr_free_min, adr_free) : 0x7fff;
 #endif
 }
 
-#if 0
-__attribute__((always_inline)) void __assert()
-{
-  label:
-  assert_log[0] = &&label;
-  watchdog_mcu_reset();
-}
-#else
+PROGMEM static const uint8_t assert_sign [] = { 'a', 's', 's', 'e', 'r', 't', '(', ')' };
+
 void __assert()
 {
+  void * ret_adr = __builtin_return_address(0);
 #if PLAIN_CONSOLE
-  printf("assert:%x\n", __builtin_return_address(0));
+  printf("assert:%x\n", ret_adr);
 #endif
-  DBG static uint8_t assert_cnt;
-  DBG static void *  assert_log [4];
-
-  const uint8_t log_len = sizeof(assert_log) / sizeof(assert_log[0]);
-  assert_log[MIN(assert_cnt, log_len - 1)] = __builtin_return_address(0);
-  if (assert_cnt < (typeof(assert_cnt))-1) assert_cnt++;
+  DBG_LOG_FINITE(assert_log, ret_adr, 4);
+  DBG_VAR(assert_last, ret_adr);
+  
+  extern uint8_t __data_start;
+  memcpy_P(&__data_start, assert_sign, sizeof(assert_sign));
   watchdog_mcu_reset();
 }
-#endif
 
 DBG_ISR(BADISR_vect, ISR_BLOCK)
 {
@@ -92,24 +96,33 @@ __attribute__((section(".init3"), naked, used))
 void debug()
 {
   const uint8_t RFMASK = (1 << WDRF) | (1 << BORF) | (1 << EXTRF) | (1 << PORF);
+  const uint8_t assertRF     = WDRF + 1;
+  const uint8_t bootloaderRF = WDRF + 2;
   uint8_t rst_src = MCUSR & RFMASK;
   MCUSR = MCUSR & ~RFMASK;
   wdt_disable();
 
-  /* add bootloader "reset" flag */
-  PROGMEM static const char sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
+  /* add assert "reset" flag */
   extern uint8_t __data_start;
-  if (memcmp_P(&__data_start, sign, sizeof(sign)) == 0) {
-    rst_src |= RFMASK + 1;
-    rst_src &= ~(1 << WDRF);
+  if (memcmp_P(&__data_start, assert_sign, sizeof(assert_sign)) == 0) {
+    rst_src |=  (1 << assertRF);
+    rst_src &= ~(1 <<     WDRF);
   }
   
-  if (rst_src & ~(1 << WDRF)) {
+  /* add bootloader "reset" flag */
+  PROGMEM static const char bootloader_sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
+  extern uint8_t __data_start;
+  if (memcmp_P(&__data_start, bootloader_sign, sizeof(bootloader_sign)) == 0) {
+    rst_src |=  (1 << bootloaderRF);
+    rst_src &= ~(1 <<         WDRF);
+  }
+  
+  if (rst_src & ~((1 << assertRF) | (1 << WDRF))) {
     debug_init();
   } else {
     if (rst_src & (1 << WDRF)) {
       DBG_CNT(wdrf_cnt);
-    } else {
+    } else if (!(rst_src & (1 << assertRF))) {
       DBG_CNT(reboot_cnt);
     }
 
