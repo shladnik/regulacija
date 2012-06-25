@@ -45,11 +45,7 @@ uint8_t getput()
 
 uint16_t getput_word()
 {
-  uint16_t dat;
-  uint8_t * dat_p = (uint8_t *)(&dat);
-  dat_p[1] = getput();
-  dat_p[0] = getput();
-  return dat;
+  return (getput() << 8) | getput();
 }
 
 void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len, uint8_t check)
