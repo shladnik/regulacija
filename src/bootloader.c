@@ -1,3 +1,5 @@
+//ISR(BADISR_vect, ISR_NAKED) {}
+
 #if   SPM_PAGESIZE < (1 <<  8)
 typedef uint8_t  pptr_t;
 #elif SPM_PAGESIZE < (1 << 16)
@@ -187,8 +189,7 @@ int main()
 }
 
 /* jump to bootloader - replacement for reset vector after we start writting */
-__attribute__((naked, used))
-__attribute__((section(".jmp")))
+__attribute__((section(".jmp"), naked, used))
 void jmp() 
 {
 #if 1
@@ -199,4 +200,3 @@ void jmp()
   ((func_t)&__vectors)();
 #endif
 }
-

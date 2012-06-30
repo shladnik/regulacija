@@ -48,10 +48,10 @@ DBG_ISR(TIMER0_OVF_vect, ISR_BLOCK)
 }
 #endif
 
-void TIMER1_COMPA_vect_trigger()
+void TIMER1_COMPB_vect_trigger()
 {
-  OCR1A = TCNT1 + (PRESCALER > 1 ? 0x2 : 0x8);
-  while (!(TIFR1 & (1 << OCIE1A)));
+  OCR1B = TCNT1 + (PRESCALER > 1 ? 0x2 : 0x8);
+  while (!(TIFR1 & (1 << OCIE1B)));
 }
 
 DBG_ISR(TIMER1_OVF_vect,)
@@ -59,17 +59,17 @@ DBG_ISR(TIMER1_OVF_vect,)
   high++;
   if (en && cmp_high == high) {
     en = 0;
-    TIMSK1 |= 1 << OCIE1A;
-    TIFR1   = 1 << OCIE1A;
-    if (OCR1A <= TCNT1) {
-      TIMER1_COMPA_vect_trigger();
+    TIMSK1 |= 1 << OCIE1B;
+    TIFR1   = 1 << OCIE1B;
+    if (OCR1B <= TCNT1) {
+      TIMER1_COMPB_vect_trigger();
     }
   }
 }
 
-DBG_ISR(TIMER1_COMPA_vect,)
+DBG_ISR(TIMER1_COMPB_vect,)
 {
-  TIMSK1 &= ~(1 << OCIE1A);
+  TIMSK1 &= ~(1 << OCIE1B);
   extern void timer_int();
   timer_int();
 }
@@ -107,17 +107,17 @@ void timer_set(timer_t cmp)
   timer_unset();
 
   timer_t tracked = timer_tracked_get();
-  OCR1A = (uint16_t)cmp;
-  TIFR1 = 1 << OCIE1A;
+  OCR1B = (uint16_t)cmp;
+  TIFR1 = 1 << OCIE1B;
   timer_t now = timer_now();
 
   if (in_range(tracked, cmp, now + 1)) {
-    TIMER1_COMPA_vect_trigger();
-    TIMSK1 |= 1 << OCIE1A;
+    TIMER1_COMPB_vect_trigger();
+    TIMSK1 |= 1 << OCIE1B;
   } else {
     uint16_t msw = cmp >> 16;
     if (msw == high) {
-      TIMSK1 |= 1 << OCIE1A;
+      TIMSK1 |= 1 << OCIE1B;
     } else {
       cmp_high = msw;
       en = 1;
@@ -128,5 +128,5 @@ void timer_set(timer_t cmp)
 void timer_unset()
 {
   en = 0;
-  TIMSK1 &= ~(1 << OCIE1A);
+  TIMSK1 &= ~(1 << OCIE1B);
 }

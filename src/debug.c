@@ -1,13 +1,7 @@
-INLINE void isr_enter()
-{
-  DBG2CP_LOG(isr_return, __builtin_return_address(0), 8);
-  log_adr();
-}
-
-INLINE void isr_exit()
-{
-  log_adr();
-}
+extern uint8_t __data_start;
+PROGMEM static const char     assert_sign [] = { 'a', 's', 's', 'e', 'r', 't', '(', ')' };
+PROGMEM static const char bootloader_sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
+PROGMEM static const char   soft_rst_sign [] = { 's', 'o', 'f', 't', '_', 'r', 's', 't' };
 
 void log_adr()
 {
@@ -24,20 +18,15 @@ void log_adr()
 #endif
 }
 
-PROGMEM static const uint8_t assert_sign [] = { 'a', 's', 's', 'e', 'r', 't', '(', ')' };
-
-void __assert()
+INLINE void isr_enter()
 {
-  void * ret_adr = __builtin_return_address(0);
-#if PLAIN_CONSOLE
-  printf("assert:%x\n", ret_adr);
-#endif
-  DBG_LOG_FINITE(assert_log, ret_adr, 4);
-  DBG_VAR(assert_last, ret_adr);
-  
-  extern uint8_t __data_start;
-  memcpy_P(&__data_start, assert_sign, sizeof(assert_sign));
-  watchdog_mcu_reset();
+  DBG2CP_LOG(isr_return, __builtin_return_address(0), 8);
+  log_adr();
+}
+
+INLINE void isr_exit()
+{
+  log_adr();
 }
 
 DBG_ISR(BADISR_vect, ISR_BLOCK)
@@ -71,6 +60,25 @@ BADISR_CNT(17)
 BADISR_CNT(20)
 #endif
 
+USED void soft_rst()
+{
+  memcpy_P(&__data_start, soft_rst_sign, sizeof(soft_rst_sign));
+  watchdog_mcu_reset();
+}
+
+void __assert()
+{
+  void * ret_adr = __builtin_return_address(0);
+#if PLAIN_CONSOLE
+  printf("assert:%x\n", ret_adr);
+#endif
+  DBG_LOG_FINITE(assert_log, ret_adr, 4);
+  DBG_VAR(assert_last, ret_adr);
+  
+  memcpy_P(&__data_start, assert_sign, sizeof(assert_sign));
+  watchdog_mcu_reset();
+}
+
 USED void debug_init()
 {
   stack_check_init();
@@ -98,32 +106,36 @@ void debug()
   const uint8_t RFMASK = (1 << WDRF) | (1 << BORF) | (1 << EXTRF) | (1 << PORF);
   const uint8_t assertRF     = WDRF + 1;
   const uint8_t bootloaderRF = WDRF + 2;
-  uint8_t rst_src = MCUSR & RFMASK;
-  MCUSR = MCUSR & ~RFMASK;
-  wdt_disable();
+  const uint8_t soft_rstRF   = WDRF + 3;
+  const uint8_t dbgRFMASK = (1 << assertRF) | (1 << WDRF);
 
-  /* add assert "reset" flag */
-  extern uint8_t __data_start;
-  if (memcmp_P(&__data_start, assert_sign, sizeof(assert_sign)) == 0) {
-    rst_src |=  (1 << assertRF);
-    rst_src &= ~(1 <<     WDRF);
+  uint8_t rst_src = MCUSR;
+  MCUSR = rst_src & ~RFMASK;
+  wdt_disable();
+  rst_src &= RFMASK;
+
+  if (rst_src & (1 << WDRF)) {
+    if        (memcmp_P(&__data_start,     assert_sign, sizeof(    assert_sign)) == 0) {
+      rst_src |=  (1 <<     assertRF);
+      rst_src &= ~(1 <<         WDRF);
+    } else if (memcmp_P(&__data_start, bootloader_sign, sizeof(bootloader_sign)) == 0) {
+      rst_src |=  (1 << bootloaderRF);
+      rst_src &= ~(1 <<         WDRF);
+    } else if (memcmp_P(&__data_start,   soft_rst_sign, sizeof(  soft_rst_sign)) == 0) {
+      rst_src |=  (1 <<   soft_rstRF);
+      rst_src &= ~(1 <<         WDRF);
+    }
   }
   
-  /* add bootloader "reset" flag */
-  PROGMEM static const char bootloader_sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
-  extern uint8_t __data_start;
-  if (memcmp_P(&__data_start, bootloader_sign, sizeof(bootloader_sign)) == 0) {
-    rst_src |=  (1 << bootloaderRF);
-    rst_src &= ~(1 <<         WDRF);
-  }
-  
-  if (rst_src & ~((1 << assertRF) | (1 << WDRF))) {
+  if (rst_src & ~dbgRFMASK) {
     debug_init();
   } else {
-    if (rst_src & (1 << WDRF)) {
-      DBG_CNT(wdrf_cnt);
-    } else if (!(rst_src & (1 << assertRF))) {
+    if (rst_src == 0) {
       DBG_CNT(reboot_cnt);
+    } else if (rst_src & (1 << WDRF)) {
+      DBG_CNT(wdrf_cnt);
+    } else {
+      /* must have been assert */
     }
 
     dbg2cp_copy();

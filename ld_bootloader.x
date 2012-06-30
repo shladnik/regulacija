@@ -71,6 +71,11 @@ SECTIONS
   .rel.plt       : { *(.rel.plt)		}
   .rela.plt      : { *(.rela.plt)		}
   /* Internal text space or external memory.  */
+  /*
+  /DISCARD/      : { crtm328p.o(.text)		}
+  /DISCARD/      : { *(.vectors)		}
+  discarding vectors worked if i defined badisr (vector_default)
+  */
   .text   :
   {
     *(.vectors)

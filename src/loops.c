@@ -8,12 +8,12 @@ const loop_t loops [] PROGMEM = {
   { { clock_loop      , 0,  0 }, TIMER_S(CLOCK_LOOP_PERIOD) },
 #endif
   { { watchdog_reseter, 0, -1 }, WATCHDOG_RESETER_PERIOD    },
+  { { syscheck_loop   , 0,  0 }, TIMER_S(14)                },
   { { lcd_loop        , 0,  0 }, TIMER_S(11)                },
   { { pumping_loop    , 0,  0 }, TIMER_MIN(1)               },
   { { collector_loop  , 0,  0 }, TIMER_S(30)                },
   { { furnace_loop    , 0,  0 }, TIMER_S(10)                },
   { { radiator_loop   , 0,  0 }, TIMER_S(10)                },
-  { { syscheck_loop   , 0,  0 }, TIMER_S(14)                },
 };
 
 #define LOOP_NR (sizeof(loops)/sizeof(loop_t))

@@ -35,11 +35,14 @@ defines = {
 
 cflags = (
 #"-g3",   # gstabs+
-"-ggdb3", # dwarf
+#"-ggdb3", # dwarf # segmentation fault in lto1
 #"-feliminate-dwarf2-dups",
+#"-gdwarf-4",
+#"-gstrict-dwarf",
 "-Os",
 "-mmcu=atmega32",
 #"-mmcu=atmega328p",
+#"-v", "-save-temps", # GCC debugging
 "-std=gnu99",
 
 #"-fstack-usage",
@@ -56,19 +59,25 @@ cflags = (
 "-fno-split-wide-types",
 "-funsigned-char",
 "-flto",
-#"-nostartfiles",
-
-
-#"-Wl,--relax", #TODO retry - that used to work but having segmentation faults now (8.12.2011)
 
 # throw out unneeded code - this seems to have no effect when -combine -fwhole-program is used
 #"-fdata-sections",
 #"-ffunction-sections",
 #"-Wl,-gc-sections,-print-gc-sections",
+#"-Wl,--relax", #TODO retry - that used to work but having segmentation faults now (8.12.2011); works with -gc-sections (27.6.2012)
 
 # select printf
 #"-Wl,-u,vfprintf", "-lprintf_min",
 #"-Wl,-u,vfprintf", "-lprintf_flt",
+)
+
+cflags_fw = (
+)
+cflags_bootloader = (
+"-mno-call-prologues",
+#"-nostartfiles",
+"-mno-interrupts",
+#"-mtiny-stack",
 )
 
 #
@@ -130,6 +139,7 @@ sources_fw = (
 "src/flash.c",
 "src/time.c",
 "src/keys.c",
+"src/ac.c",
 )
 
 sources_bootloader = (
@@ -155,6 +165,7 @@ def compile(sources, name):
   for d in defines:
     base_cmd[len(base_cmd):] = [ "-D" + d + "=" + str(defines[d]) ]
   base_cmd[len(base_cmd):] = cflags
+  base_cmd[len(base_cmd):] = eval("cflags_" + name)
   
   # Compile
   objn = name + ".obj"
