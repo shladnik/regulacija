@@ -1,5 +1,7 @@
 void radiator_loop()
-{
+{ 
+  temp_t collector = ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 7);
+
   temp_t read_0 = ds18b20_get_temp(DS18B20_RADIATOR_U, RESOLUTION_11, 7);
   _delay_ms(1000);
   temp_t read_1 = ds18b20_get_temp(DS18B20_RADIATOR_U, RESOLUTION_11, 7);
@@ -9,7 +11,7 @@ void radiator_loop()
   temp_t goal = CONFIG_GET(radiator_goal);
   if (goal < 0) {
     const temp_t wanted = TEMP(23);
-    temp_t goal_auto = wanted + (wanted - ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 7));
+    temp_t goal_auto = wanted + (wanted - collector);
     goal = MAX(wanted, goal_auto);
   }
 
@@ -20,13 +22,13 @@ void radiator_loop()
   
   if (dir) valve_close_for(VALVE_RADIATOR, amount);
   else     valve_open_for (VALVE_RADIATOR, amount);
-  
-  if (valve_closed(VALVE_RADIATOR))
+ 
+  if (valve_closed(VALVE_RADIATOR) || collector > TEMP(10)) // quick dirty hack - father wants radiator in bathroom warm, maybe we can achieve that by heating without pump
     relay_off(RELAY_PUMP_RADIATOR);
   else
     relay_on (RELAY_PUMP_RADIATOR);
 }
-
+#if 0
 void radiator_loop_new()
 {
   temp_t tab [] = {
@@ -54,3 +56,4 @@ void radiator_loop_new()
   else
     relay_on (RELAY_PUMP_RADIATOR);
 }
+#endif
