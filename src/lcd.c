@@ -30,11 +30,11 @@ void lcd_write(bool ctrl, uint8_t dat)
 
 void lcd_init()
 {
-  static bool power_on_reset = 1;
-  if (power_on_reset) {
-    power_on_reset = 0;
+  //static bool power_on_reset = 1;
+  //if (power_on_reset) {
+  //  power_on_reset = 0;
     timer_sleep_ms(40);
-  }
+  //}
 
   uint8_t d;
 
@@ -92,6 +92,7 @@ int lcd_putc(char c, FILE * f)
 {
   (void)(f);
 
+  assert(lcd_pos < sizeof(fb)/sizeof(fb[0]));
   fb[lcd_pos] = c;
   lcd_write(0, (uint8_t)c);
 

@@ -3,45 +3,6 @@ pumping_state_t pumping_state __attribute__ ((section (".noinit")));
 
 void pumping_loop()
 {
-#if 0
-  temp_t t_stable_s_t = ds18b20_get_temp(DS18B20_STABLE_S_T, RESOLUTION_9, 7);
-  temp_t t_house_0    = ds18b20_get_temp(DS18B20_HOUSE_0   , RESOLUTION_9, 7);
-  temp_t t_house_s_t  = ds18b20_get_temp(DS18B20_HOUSE_S_T , RESOLUTION_9, 7);
-
-  /* pumping stable <-> house */
-  switch (pumping_state) {
-    case PUMPING_H2S:
-      if      (/*t_house_s_t < radiator_goal - TEMP(2) && */
-               t_house_0 < TEMP(45) || (t_house_s_t  - t_stable_s_t < TEMP(3))) pumping_state = PUMPING_IDLE;
-      break;
-    case PUMPING_S2H:
-      if      (/*t_house_0 > TEMP(55) ||*/ (t_stable_s_t - t_house_s_t  < TEMP(3))) pumping_state = PUMPING_IDLE;
-      break;
-    default:
-      if      (/*t_house_s_t > radiator_goal + TEMP(2) && */
-               t_house_0 > TEMP(55) && (t_house_s_t  - t_stable_s_t > TEMP(7))) pumping_state = PUMPING_H2S;
-      else if (/*t_house_0 < TEMP(45) &&*/ (t_stable_s_t - t_house_s_t  > TEMP(7))) pumping_state = PUMPING_S2H;
-      break;
-  }
-
-  switch (pumping_state) {
-    case PUMPING_H2S:
-      if (valve_closed(VALVE_SH0) && valve_opened(VALVE_SH1)) relay_on(RELAY_PUMP_SH);
-      valve_close_for(VALVE_SH0, VALVE_STATE_MAX);
-      valve_open_for (VALVE_SH1, VALVE_STATE_MAX);
-      break;
-    case PUMPING_S2H:
-      if (valve_opened(VALVE_SH0) && valve_closed(VALVE_SH1)) relay_on(RELAY_PUMP_SH);
-      valve_open_for (VALVE_SH0, VALVE_STATE_MAX);
-      valve_close_for(VALVE_SH1, VALVE_STATE_MAX);
-      break;
-    default:
-      relay_off(RELAY_PUMP_SH);
-      valve_close_for(VALVE_SH0, VALVE_STATE_MAX);
-      valve_close_for(VALVE_SH1, VALVE_STATE_MAX);
-      break;
-  }
-#else
   temp_t tab [] = {
     DS18B20_HOUSE_S_B,
     DS18B20_HOUSE_S_T,
@@ -74,20 +35,6 @@ void pumping_loop()
   //bool milking_time    () { return 1; }
   bool h2s             () { return  milking_time() && diff_h2s(); }
   bool s2h             () { return !milking_time() && diff_s2h(); }
-
-  DBG static bool   d_mms          ; d_mms           = timecmp_lt(mms, date);
-  DBG static bool   d_mme          ; d_mme           = timecmp_ge(mme, date);
-  DBG static temp_t d_diff_on      ; d_diff_on       = diff_on      ();
-  DBG static temp_t d_diff_off     ; d_diff_off      = diff_off     ();
-  DBG static temp_t d_diff         ; d_diff          = diff         ();
-  DBG static bool   d_diff_h2s     ; d_diff_h2s      = diff_h2s     ();
-  DBG static bool   d_diff_s2h     ; d_diff_s2h      = diff_s2h     ();
-  DBG static temp_t d_min_house_s_b; d_min_house_s_b = min_house_s_b();
-  DBG static bool   d_furnace      ; d_furnace       = furnace      ();
-  DBG static bool   d_collector    ; d_collector     = collector    ();
-  DBG static bool   d_milking_time ; d_milking_time  = milking_time ();
-  DBG static bool   d_h2s          ; d_h2s           = h2s          ();
-  DBG static bool   d_s2h          ; d_s2h           = s2h          ();
   
   if      (furnace()   || h2s()) pumping_state = PUMPING_H2S;
   else if (collector() || s2h()) pumping_state = PUMPING_S2H;
@@ -110,5 +57,4 @@ void pumping_loop()
       valve_close_for(VALVE_SH1, VALVE_STATE_MAX);
       break;
   }
-#endif
 }

@@ -1,7 +1,7 @@
 #ifndef __CLOCK_H__
 #define __CLOCK_H__
 
-//#define LOOP_CLOCK // clock provided via loops.c facility
+#define LOOP_CLOCK // clock provided via loops.c facility
 #define CLOCK_LOOP_PERIOD 1L // in seconds
 
 #ifndef LOOP_CLOCK

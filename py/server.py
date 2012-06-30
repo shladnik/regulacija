@@ -21,11 +21,11 @@ def sync_time():
       gumi = gum.Gum()
       gumi.set_time()
     except Exception as inst:
-      print("sync_time failed:", inst)
+      print("sync_time failed:", type(inst), inst)
       time.sleep(1)
     else:
       del gumi
-      time.sleep(900)
+      time.sleep(15*60)
 
 sync_time_thread = threading.Thread(target = sync_time, name = 'SyncTimeThread')
 sync_time_thread.daemon = True

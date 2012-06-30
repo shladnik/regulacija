@@ -1,8 +1,5 @@
 #if 0
-/*
- *
- * 10, 80
- */
+
 void furnace_loop()
 {
   enum {

@@ -26,7 +26,7 @@ void radiator_loop()
   else
     relay_on (RELAY_PUMP_RADIATOR);
 }
-
+#if 0
 void radiator_loop_new()
 {
   temp_t tab [] = {
@@ -54,3 +54,4 @@ void radiator_loop_new()
   else
     relay_on (RELAY_PUMP_RADIATOR);
 }
+#endif
