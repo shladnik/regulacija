@@ -6,10 +6,11 @@ PROGMEM static const uint8_t   soft_rst_sign [] = { 's', 'o', 'f', 't', '_', 'r'
 void log_adr()
 {
 #ifndef NDEBUG
+  void * ret_adr = __builtin_return_address(0);
 #if PLAIN_CONSOLE
-  printf("log_adr:%x\n", __builtin_return_address(0));
+  printf("log_adr:%x\n", ret_adr);
 #endif
-  DBG2CP_LOG(adr_log, __builtin_return_address(0), 8);
+  DBG2CP_LOG(adr_log, ret_adr, 8);
 
   DBG2CP_VAR(adr_time, timer_now());
   extern uint8_t __heap_start;
@@ -20,7 +21,14 @@ void log_adr()
 
 INLINE void isr_enter()
 {
-  DBG2CP_LOG(isr_return, __builtin_return_address(0), 8);
+  uintptr_t ret_adr = (uintptr_t)__builtin_return_address(0);
+  DBG2CP_LOG(isr_return, ret_adr, 8);
+  extern uint8_t __interruptable0_start;
+  extern uint8_t __interruptable0_end;
+  extern uint8_t __interruptable1_start;
+  extern uint8_t __interruptable1_end;
+  assert((((uintptr_t)&__interruptable0_start)>>1 <= ret_adr && ret_adr < ((uintptr_t)&__interruptable0_end)>>1) ||
+         (((uintptr_t)&__interruptable1_start)>>1 <= ret_adr && ret_adr < ((uintptr_t)&__interruptable1_end)>>1));
   log_adr();
 }
 
@@ -62,12 +70,14 @@ BADISR_CNT(20)
 
 USED void soft_rst()
 {
+  cli();
   memcpy_P(&__data_start, soft_rst_sign, sizeof(soft_rst_sign));
   watchdog_mcu_reset();
 }
 
 void __assert()
 {
+  cli();
   void * ret_adr = __builtin_return_address(0);
 #if PLAIN_CONSOLE
   printf("assert:%x\n", ret_adr);

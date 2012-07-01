@@ -166,8 +166,7 @@ int main()
       extern uint8_t __jmp_load_end;
       uintptr_t len = &__jmp_load_end - &__jmp_load_start;
       uint8_t buf_jmp [len];
-      for (uintptr_t i = 0; i < len; i++)
-        buf_jmp[i] = pgm_read_byte(&__jmp_load_start + i);
+      memcpy_P(buf_jmp, &__jmp_load_start, len);
       flash_write_block(&buf_jmp[0], 0, len, check);
     }
     

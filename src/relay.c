@@ -4,9 +4,9 @@ typedef struct {
   const bool    neg;
 } relay_t;
 
-#define PORT(i) (pgm_read_byte(&relay_tab[i].port))
-#define MASK(i) (pgm_read_byte(&relay_tab[i].mask))
-#define NEG(i)  (pgm_read_byte(&relay_tab[i].neg ))
+#define PORT(i) (PGM_GET(relay_tab[i].port))
+#define MASK(i) (PGM_GET(relay_tab[i].mask))
+#define NEG(i)  (PGM_GET(relay_tab[i].neg ))
 
 static const relay_t const relay_tab [] PROGMEM = {
 #include "relay_list.c"
