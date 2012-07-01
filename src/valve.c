@@ -10,9 +10,9 @@ typedef struct {
   valve_state_t last_update;
 } valve_t;
 
-#define RELAY_DIR(i) (pgm_read_byte(&valve_relay[i].relay_dir))
-#define RELAY_EN(i)  (pgm_read_byte(&valve_relay[i].relay_en ))
-#define NEG(i)       (pgm_read_byte(&valve_relay[i].neg      ))
+#define RELAY_DIR(i) (PGM_GET(valve_relay[i].relay_dir))
+#define RELAY_EN(i)  (PGM_GET(valve_relay[i].relay_en ))
+#define NEG(i)       (PGM_GET(valve_relay[i].neg      ))
 
 static const valve_relay_t valve_relay [] PROGMEM = {
 #include "valve_list.c"

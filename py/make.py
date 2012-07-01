@@ -279,6 +279,7 @@ if any(recompile.values()):
   symbols = dict()
   symbols.update(obj_sym)
   symbols.update(reg_sym)
+  print("_etext:", symbols['_etext']['adr'])
   
   meta = open("meta", 'wb')
   pickle.dump({ 'macros'  : macros.getdict(),

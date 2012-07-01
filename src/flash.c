@@ -121,12 +121,27 @@ USED void flash_write(uint8_t * buf, uintptr_t adr, uintptr_t len)
 
 USED void flash_read(uint8_t * buf, uintptr_t adr, uintptr_t len)
 {
-  if (config_range(adr, len) || meta_range(adr, len)) {
-    uintptr_t end = adr + len;
-    while (adr < end) {
-      *buf = pgm_read_byte(adr);
-      adr++;
-      buf++;
+  if (config_range(adr, len) || meta_range(adr, len)) pgm_read(buf, adr, len);
+}
+
+INLINE void pgm_read(uint8_t * buf, uintptr_t adr, uintptr_t len)
+{
+  if (__builtin_constant_p(len)) {
+    switch (len) {
+      case 1:
+        *buf = pgm_read_byte(adr);
+        break;
+      case 2:
+        *(uint16_t *)buf = pgm_read_word(adr);
+        break;
+      case 4:
+        *(uint32_t *)buf = pgm_read_dword(adr);
+        break;
+      default:
+        memcpy_P(buf, (uint8_t *)adr, len);
+        break;
     }
+  } else {
+    memcpy_P(buf, (uint8_t *)adr, len);
   }
 }

@@ -124,10 +124,12 @@ SECTIONS
     KEEP (*(.init8))
     *(.init9)  /* Call main().  */
     KEEP (*(.init9))
+    PROVIDE (__interruptable0_start = .) ;
     *(.text)
     . = ALIGN(2);
     *(.text.*)
     . = ALIGN(2);
+    PROVIDE (__interruptable0_end = .) ;
     *(.fini9)  /* _exit() starts here.  */
     KEEP (*(.fini9))
     *(.fini8)
@@ -162,7 +164,9 @@ SECTIONS
 
   .flash_write 0x7000:
   {
+    PROVIDE (__interruptable1_start = .) ;
     *(.flash_write)
+    PROVIDE (__interruptable1_end = .) ;
   } > text
 
   __fw_end = . ;

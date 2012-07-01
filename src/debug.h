@@ -16,7 +16,7 @@
 #define DBG_VAR(d, v)           do { DBG    static typeof(v) d; d = v;                    } while(0)
 #define DBG_MAX(d, v)           do { DBG    static typeof(v) d; d = MAX(v, d);            } while(0)
 #define DBG_LOG(d, v, l)        do { DBG    static typeof(v) d [l]; memmove(&d, &d[1], sizeof(d) - sizeof(d[0])); d[l-1] = v; } while(0)
-#define DBG_LOG_FINITE(d, v, l) do { DBG    static typeof(v) d [l]; DBG static uint8_t i = 0; if (i < l) { d[i] = v; i++; }   } while(0)
+#define DBG_LOG_FINITE(d, v, l) do { DBG    static typeof(v) d [l]; DBG static uint8_t d##i = 0; if (d##i < l) { d[d##i] = v; d##i++; } } while(0)
 #define DBG2CP_VAR(d, v)        do { DBG2CP static typeof(v) d; d = v;                    } while(0)
 #define DBG2CP_LOG(d, v, l)     do { DBG2CP static typeof(v) d [l]; memmove(&d, &d[1], sizeof(d) - sizeof(d[0])); d[l-1] = v; } while(0)
 
