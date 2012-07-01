@@ -139,7 +139,7 @@ sources_fw = (
 "src/flash.c",
 "src/time.c",
 "src/keys.c",
-"src/ac.c",
+#"src/ac.c",
 )
 
 sources_bootloader = (
