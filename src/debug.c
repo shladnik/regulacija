@@ -1,7 +1,7 @@
 extern uint8_t __data_start;
-PROGMEM static const char     assert_sign [] = { 'a', 's', 's', 'e', 'r', 't', '(', ')' };
-PROGMEM static const char bootloader_sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
-PROGMEM static const char   soft_rst_sign [] = { 's', 'o', 'f', 't', '_', 'r', 's', 't' };
+PROGMEM static const uint8_t     assert_sign [] = { 'a', 's', 's', 'e', 'r', 't', '(', ')' };
+PROGMEM static const uint8_t bootloader_sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
+PROGMEM static const uint8_t   soft_rst_sign [] = { 's', 'o', 'f', 't', '_', 'r', 's', 't' };
 
 void log_adr()
 {
