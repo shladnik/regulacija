@@ -3,7 +3,7 @@
 #define ISC_NEGEDGE (((1 << ISC01) | (0 << ISC00)) >> ISC00)
 #define ISC_POSEDGE (((1 << ISC01) | (1 << ISC00)) >> ISC00)
 #define ISC_MASK    ISC_POSEDGE
-
+#if 0
 static const timer_t t_settle = TIMER_MS(20);
 
 typedef struct {
@@ -50,7 +50,7 @@ void int0_cb()
   GICR |= 1 << INT0;
 }
 
-DBG_ISR(INT0_vect)
+DBG_ISR(INT0_vect,)
 {
   if (port_get_pin(3, 2) == int_edge_get(0)) {
     GICR &= ~(1 << INT0);
@@ -59,7 +59,12 @@ DBG_ISR(INT0_vect)
   }
 }
 
-DBG_ISR(INT1_vect)
+DBG_ISR(INT1_vect,)
 {
   DBG_CNT(int1_posedge);
 }
+#else
+void keys_init()
+{
+}
+#endif
