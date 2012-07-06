@@ -220,8 +220,12 @@ void uart_init()
 #else
   UCSR0A &= ~(1 << U2X0);
 #endif
-  
+ 
+#if __AVR_ATmega32__
+  UCSRC = (1 << URSEL) | (3 << UCSZ0);
+#else
   UCSR0C = (3 << UCSZ00);
+#endif
 #if 0 //PLAIN_CONSOLE
   UCSR0B = (1 << TXEN0);
 #else
