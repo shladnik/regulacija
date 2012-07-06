@@ -3,6 +3,17 @@ PROGMEM static const uint8_t     assert_sign [] = { 'a', 's', 's', 'e', 'r', 't'
 PROGMEM static const uint8_t bootloader_sign [] = { 'b', 'o', 'o', 't', 'l', 'o', 'a', 'd' };
 PROGMEM static const uint8_t   soft_rst_sign [] = { 's', 'o', 'f', 't', '_', 'r', 's', 't' };
 
+uintptr_t dump_stack()
+{
+  extern uint8_t __stack;
+  uintptr_t sp = SP;
+  uintptr_t size = (uintptr_t)(&__stack) - sp;
+  DBG_VAR(stack_size, size);
+  DBG static uint8_t stack_dump [64];
+  memcpy(stack_dump, (uint8_t *)(sp + 3), MIN(sizeof(stack_dump) / sizeof(stack_dump[0]), size));
+  return size;
+}
+
 void log_adr()
 {
 #ifndef NDEBUG
@@ -78,6 +89,7 @@ USED void soft_rst()
 void __assert()
 {
   cli();
+  dump_stack();
   void * ret_adr = __builtin_return_address(0);
 #if PLAIN_CONSOLE
   printf("assert:%x\n", ret_adr);
@@ -110,10 +122,22 @@ USED void dbg2cp_copy()
   }
 }
 
-__attribute__((section(".init3"), naked, used))
-void debug()
+const uint8_t RFMASK = (1 << WDRF) | (1 << BORF) | (1 << EXTRF) | (1 << PORF);
+
+__attribute__((section(".init1"), naked, used))
+void debug0()
 {
-  const uint8_t RFMASK = (1 << WDRF) | (1 << BORF) | (1 << EXTRF) | (1 << PORF);
+  asm volatile
+  (
+    "cli\n\t"
+    "clr __zero_reg__\n\t"
+  );
+  if ((MCUSR & RFMASK) == 0) dump_stack();
+}
+
+__attribute__((section(".init3"), naked, used))
+void debug1()
+{
   const uint8_t assertRF     = WDRF + 1;
   const uint8_t bootloaderRF = WDRF + 2;
   const uint8_t soft_rstRF   = WDRF + 3;

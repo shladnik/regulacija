@@ -31,7 +31,7 @@ class Gum():
       if not rate: rate = unpickled['rate']
       if not meta: meta = unpickled['meta']
 
-    ports = tuple(map(lambda x: '/dev/ttyUSB' + str(x), range(4)))
+    ports = tuple(map(lambda x: '/dev/ttyUSB' + str(x), range(16)))
     if port:
       ports = filter(lambda x: x != port, ports)
       ports = tuple([port]) + tuple(ports)
