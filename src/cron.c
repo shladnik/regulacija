@@ -20,6 +20,8 @@ void cron()
 {
   for (uint8_t i = 0; i < MAX_CRONS; i++) {
     cron_t c = CONFIG_GET(crons[i]);
+    DBG2CP static uint8_t cron_i; cron_i = i;
+    DBG2CP static cron_t cronjob; cronjob = c;
 
     if (c.func) {
       if (c.min     < 60 && c.min     != date.min    ) continue;
@@ -57,5 +59,6 @@ void cron()
         CONFIG_SET(crons[i].func, c.func);
       }
     }
+    c = (cron_t){ 0, 0, 0, 0, 0, 0, 0, 0 };
   }
 }

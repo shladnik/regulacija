@@ -4,7 +4,7 @@ OUTPUT_ARCH(avr:5)
 MEMORY
 {
   text   (rx)   : ORIGIN = 0, LENGTH = 32K - 1K /* minus bootloader */
-  data   (rw!x) : ORIGIN = 0x800060, LENGTH = 2K
+  data   (rw!x) : ORIGIN = 0x800100, LENGTH = 2K
   eeprom (rw!x) : ORIGIN = 0x810000, LENGTH = 1K
   fuse      (rw!x) : ORIGIN = 0x820000, LENGTH = 1K
   lock      (rw!x) : ORIGIN = 0x830000, LENGTH = 1K
@@ -162,7 +162,7 @@ SECTIONS
     . = ALIGN(__spm_blocksize);
   }  > text
 
-  .flash_write 0x7000:
+  .flash_write 0x7800:
   {
     PROVIDE (__interruptable1_start = .) ;
     *(.flash_write)

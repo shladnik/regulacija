@@ -29,7 +29,7 @@ def sync_time():
 
 sync_time_thread = threading.Thread(target = sync_time, name = 'SyncTimeThread')
 sync_time_thread.daemon = True
-sync_time_thread.start()
+#sync_time_thread.start()
 
 
 el = xml.etree.ElementTree.Element
@@ -69,7 +69,7 @@ class Regulation(object):
     html.attrib['xmlns'] = 'http://www.w3.org/1999/xhtml'
     head = el('head')
     title = el('title')
-    title.text = "Regulacija"
+    title.text = "Arduino"
     head.append(title)
     html.append(head)
     body.append(el('hr'))

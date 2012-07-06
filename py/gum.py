@@ -53,7 +53,7 @@ class Gum():
           for uart.uart.baudrate in rates:
             uart.uart.open()
             try:
-              build = uart.access(0, 0x60, bytearray(8))
+              build = uart.access(0, 0x100, bytearray(8))
               break;
             except uart.ProtocolErr as inst:
               print("Failed:", uart.uart.port, uart.uart.baudrate, "reason:", inst)
@@ -190,7 +190,7 @@ class Gum():
   
   def flash_fw(self, f):
     print("Saving config ... ")
-    conf = self.get_config()
+    #conf = self.get_config()
     print("done.")
     
     while 1:
@@ -243,7 +243,7 @@ class Gum():
           break
 
     print("Restoring config ... ")
-    self.set_config(conf)
+    #self.set_config(conf)
     print("done.")
 
     print("Setting time ... ")
