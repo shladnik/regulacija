@@ -278,7 +278,7 @@ USED void ds18b20_get_temp_tab(DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp
   assert(ds18b20_err_handler == 0);
   ds18b20_err_handler = &tmp_eh;
   uint8_t errno = setjmp(tmp_eh);
-  /* after setjum was called - readonly variables can be latched as non-volatile */
+  /* after setjmp was called - readonly variables can be latched as non-volatile */
   RESOLUTION r   = v_r;
   uint8_t    rty = v_rty;
   /* this could be further optimized by by having volatile & non-volatile versions and use it appropriate */
