@@ -6,11 +6,11 @@ PROGMEM static const uint8_t   soft_rst_sign [] = { 's', 'o', 'f', 't', '_', 'r'
 uintptr_t dump_stack()
 {
   extern uint8_t __stack;
-  uintptr_t sp = SP;
+  uintptr_t sp = SP + 3;
   uintptr_t size = (uintptr_t)(&__stack) - sp;
   DBG_VAR(stack_size, size);
-  DBG static uint8_t stack_dump [64];
-  memcpy(stack_dump, (uint8_t *)(sp + 3), MIN(sizeof(stack_dump) / sizeof(stack_dump[0]), size));
+  DBG static uint8_t stack_dump [0xc8];
+  memcpy(stack_dump, (uint8_t *)sp, MIN(sizeof(stack_dump) / sizeof(stack_dump[0]), size));
   return size;
 }
 

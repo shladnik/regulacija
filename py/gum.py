@@ -26,6 +26,8 @@ class Gum():
       unpickled = pickle.load(open("gum.cache", 'rb'))
     except IOError:
       pass
+    except EOFError:
+      pass
     else:
       if not port: port = unpickled['port']
       if not rate: rate = unpickled['rate']
@@ -331,20 +333,30 @@ class Gum():
         time.sleep(1.0)
   
       self.write_symbol("exexec_buf", arg_buf)
-      if type(func) != int: func = Gum.meta['symbols'][func]['adr']
-      func >>= 1
+      if type(func) == int: adr = func
+      else                : adr = Gum.meta['symbols'][func]['adr']
+      adr >>= 1
       
       with uart.access.lock:
-        self.write_symbol("exexec_func", func)
+        self.write_symbol("exexec_func", adr)
         
         if block:
           expected = ( 1, Gum.meta['symbols']['exexec_func']['adr'], bytearray([0, 0]) )
-          response = None
-          #try:
-          response = uart.receive(timeout = 15)
-          if response != expected: raise Exception("Exexec response failture (expected %s, got %s)." % (str(expected), str(response)))
-          #except ProtocolErr:
-          #  if self.read_symbol("exexec_func") != 0: raise Exception("Exexec response failback failture (expected %s, got %s)." % (str(expected), str(response)))
+          timeout = 15
+          check   = 3
+          try:
+            response = uart.receive(timeout = check)
+            if response != expected:
+              raise Exception("Exexec failed (wrong packet received: expected %s, got %s)." % (str(expected), str(response)))
+          except uart.RxErrTimeout:
+            val = self.read_symbol("exexec_func")
+            if   val == adr:
+              print("Busy running", func, "...")
+              timeout -= check
+            elif val == 0:
+              print("Exexec finished without response?")
+            else:
+              raise
   
       if block:
         return_bytes = self.read_symbol("exexec_buf", None)

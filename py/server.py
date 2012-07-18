@@ -283,7 +283,11 @@ class Regulation(object):
     body.append(form)
     
     p = el('p')
-    p.text = "Stack status: " + str(gumi.exexec('stack_check')[0])
+    p.text = "Stack status: "
+    try:
+      p.text += str(gumi.exexec('stack_check')[0])
+    except:
+      p.text += "check failed"
     body.append(p)
     
     tr = el('tr')

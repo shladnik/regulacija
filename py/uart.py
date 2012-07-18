@@ -135,9 +135,11 @@ def receive(timeout):
       return (write, adr, dat)
     except ProtocolErr as inst:
       if rx_bytes:
+        print(inst)
         print("Received so far:", end=" ")
         for b in rx_bytes: print(hex(b), end=" ")
         print()
+      reset()
       raise
 
 def send(write, adr, dat):
@@ -176,7 +178,7 @@ def access(write, adr, dat, rty = 2):
         else:
           break
       except ProtocolErr as inst:
-        # clear things up
+        # clear things up (if not already by receive()?)
         reset()
         if rty:
           print(inst, "occured. Retrying...")
