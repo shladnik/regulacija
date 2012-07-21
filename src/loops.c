@@ -5,7 +5,7 @@ typedef struct {
 
 const loop_t loops [] PROGMEM = {
 #ifdef LOOP_CLOCK
-  { { clock_loop      , 0,  0 }, TIMER_S(CLOCK_LOOP_PERIOD) },
+  { { clock_loop      , 0, -1 }, TIMER_S(CLOCK_LOOP_PERIOD) }, // TODO: use some priority between highest & lowest
 #endif
   { { watchdog_reseter, 0, -1 }, WATCHDOG_RESETER_PERIOD    },
   { { syscheck_loop   , 0,  0 }, TIMER_S(14)                },

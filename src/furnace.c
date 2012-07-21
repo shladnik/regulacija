@@ -1,34 +1,59 @@
-#if 0
+#if 1
+/*
+ * out = 70, 80
+ * in  = 50
+ *
+ *
+*/
 
 void furnace_loop()
 {
   enum {
     IN,
     OUT,
+    S_T,
     NR,
   };
 
   temp_t tab [NR] = {
     DS18B20_FURNACE_B,
     DS18B20_FURNACE_T,
+    DS18B20_HOUSE_S_T,
   };
 
   ds18b20_get_temp_tab(NR, RESOLUTION_9, 7, tab);
   temp_t diff = tab[OUT] - tab[IN];
 
-  if (tab[OUT] > TEMP(85)) {
-    valve_open(VALVE_FURNACE);
+  if   (tab[OUT] > TEMP(85)) { // soft failback
     relay_on(RELAY_PUMP_FURNACE);
+    valve_open(VALVE_FURNACE);
+    DBG_CNT(furnace_failback);
   } else {
-    if (diff > TEMP(10))
-      valve_close(VALVE_FURNACE);
-    else
-      valve_open (VALVE_FURNACE);
-
-    if (diff > TEMP(20))
-      relay_on (RELAY_PUMP_FURNACE);
-    else
-      relay_off(RELAY_PUMP_FURNACE);
+    if (diff > TEMP(5)) relay_on (RELAY_PUMP_FURNACE);
+    else                relay_off(RELAY_PUMP_FURNACE);
+    
+    temp_t out_err = tab[OUT] - TEMP(75);
+    temp_t goal;
+    if (out_err < TEMP(0)) {
+      goal = MAX(TEMP(50), tab[OUT] - TEMP(15));
+    } else {
+      goal= tab[IN] - out_err;
+    }
+    
+    /* apply goal ... */
+    temp_t curr  = ds18b20_get_temp(DS18B20_FURNACE_B, RESOLUTION_12, 7);
+    _delay_ms(1000);
+    temp_t curr2 = ds18b20_get_temp(DS18B20_FURNACE_B, RESOLUTION_12, 7);
+    
+    curr = curr2 + (curr2 - curr) * 16;
+  
+    bool dir = curr < goal;
+    temp_t diff = dir ? goal - curr : curr - goal;
+  
+    valve_state_t amount = (VALVE_STATE_MAX * (uint32_t)diff) >> (8 + 6);
+  
+    if (dir) valve_close_for(VALVE_FURNACE, amount);
+    else     valve_open_for (VALVE_FURNACE, amount);
   }
 }
 
