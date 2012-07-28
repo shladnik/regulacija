@@ -216,7 +216,11 @@ USED uint8_t onewire_search_rom(rom_t * tab, uint8_t tab_len, rom_t min)
       }
     }
 
-    //if (crc8(&curr.rom[0], 7) != curr.rom[7]) continue; // TODO?
+    if (crc8(&min.rom[0], 7) != min.rom[7]) {
+      /* anything better TODO? */
+      nr = 0;
+      break;
+    }
   
     if (nr < tab_len) tab[nr] = min;
     nr++;

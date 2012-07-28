@@ -26,6 +26,8 @@ int main()
   lcd_init();
   keys_init();
   watchdog_start();
+
+  ds18b20_init();
   loops_start();
 
   sch();
