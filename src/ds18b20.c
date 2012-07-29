@@ -1,3 +1,5 @@
+#define DETECT 1
+
 typedef enum {
   STATE_UNKNOWN,
   STATE_EEPROM_READY,
@@ -13,12 +15,62 @@ CONFIG static rom_t rom [] = {
 #include "ds18b20_list.c"
 };
 
-static ds18b20_t ds18b20_tab [DS18B20_NR]; // zeros are fine - no need to initialize
+#if DETECT
+static rom_t * rom_ext;
+static uint8_t ds18b20_nr = 0;
+static ds18b20_t * ds18b20_tab;
 
+void ds18b20_init()
+{
+  uint8_t nr  = 0;
+  uint8_t rty = 2;
+  do {
+    nr = onewire_search_rom(0, 0, (rom_t){{0}});
+  } while (nr == 0 && rty--);
 
-static const uint8_t eeprom_val     = 0xbd;
-static const uint8_t scratchpad_val = 0xdb;
+  if (nr) {
+    rom_t tab [nr];
+    assert(nr == onewire_search_rom(tab, nr, (rom_t){{0}}));
+    
+    uint8_t ext_nr = nr;
+    bool tab_old [DS18B20_NR] = { 0 };
+    
+    if (DS18B20_NR) {
+      for (uint8_t i = 0; i < DS18B20_NR; i++) {
+        rom_t rom_flash = PGM_GET(rom[i]);
+        for (uint8_t j = 0; j < nr; j++) {
+          if (memcmp(&rom_flash, &tab[j], sizeof(rom_t)) == 0) {
+            ext_nr--;
+            tab_old[j] = 1;
+            break;
+          }
+        }
+      }
+    }
 
+    if (ext_nr) {
+      rom_ext = malloc(ext_nr * sizeof(rom_t));
+      assert(rom_ext);
+      uint8_t i = 0;
+      for (uint8_t j = 0; j < nr; j++)
+        if (tab_old[j] == 0) rom_ext[i++] = tab[j];
+    }
+    
+    ds18b20_nr = DS18B20_NR + ext_nr;
+  } else {
+    ds18b20_nr = DS18B20_NR;
+  }
+
+  if (ds18b20_nr) {
+    ds18b20_tab = calloc(ds18b20_nr, sizeof(ds18b20_t));
+    assert(ds18b20_tab);
+  }
+}
+#else
+void ds18b20_init() {}
+static ds18b20_t ds18b20_tab [DS18B20_NR];
+static const uint8_t ds18b20_nr = DS18B20_NR;
+#endif
 
 //
 // Error & Handling / Debug stuff
@@ -50,21 +102,11 @@ void ds18b20_error(DS18B20 i, uint8_t errno)
   longjmp(*ds18b20_err_handler, errno);
 }
 
-void ds18b20_set_resolution(DS18B20 i, RESOLUTION r)
-{
-  if (ds18b20_tab[i].resolution != r) {
-    ds18b20_tab[i].resolution = r;
-    if (ds18b20_tab[i].state > STATE_EEPROM_READY)
-        ds18b20_tab[i].state = STATE_EEPROM_READY;
-  }
-  ds18b20_init(i);
-}
-
 void ds18b20_reset(timer_t rst_time)
 {
   onewire_0();
   timer_sleep_ticks(rst_time);
-  for (/*DS18B20*/ uint8_t i = 0; i < DS18B20_NR; i++)
+  for (/*DS18B20*/ uint8_t i = 0; i < ds18b20_nr; i++)
     if (ds18b20_tab[i].state > STATE_EEPROM_READY)
         ds18b20_tab[i].state = STATE_EEPROM_READY;
 }
@@ -72,7 +114,12 @@ void ds18b20_reset(timer_t rst_time)
 /* match rom wrapper */
 static void ds18b20_match_rom(DS18B20 i)
 {
-  if (onewire_match_rom(i < DS18B20_NR ? CONFIG_GET(rom[i]) : (rom_t){{0}})) ds18b20_error(i, ERR_NO_PRESENCE);
+#if DETECT
+  rom_t r = i < DS18B20_NR ? CONFIG_GET(rom[i]) : (i < ds18b20_nr ? rom_ext[i - DS18B20_NR] : (rom_t){{0}});
+#else
+  rom_t r = i < DS18B20_NR ? CONFIG_GET(rom[i]) :                                             (rom_t){{0}} ;
+#endif
+  if (onewire_match_rom(r)) ds18b20_error(i, ERR_NO_PRESENCE);
 }
 
 
@@ -161,7 +208,11 @@ bool ds18b20_read_power_supply(DS18B20 i)
 //
 // INIT functions
 //
-void ds18b20_init(DS18B20 i)
+
+static const uint8_t eeprom_val     = 0xbd;
+static const uint8_t scratchpad_val = 0xdb;
+
+void ds18b20_setup(DS18B20 i)
 {
   switch (ds18b20_tab[i].state) {
     case STATE_UNKNOWN: {
@@ -184,6 +235,16 @@ void ds18b20_init(DS18B20 i)
     case STATE_READY: {
     }
   }
+}
+
+void ds18b20_set_resolution(DS18B20 i, RESOLUTION r)
+{
+  if (ds18b20_tab[i].resolution != r) {
+    ds18b20_tab[i].resolution = r;
+    if (ds18b20_tab[i].state > STATE_EEPROM_READY)
+        ds18b20_tab[i].state = STATE_EEPROM_READY;
+  }
+  ds18b20_setup(i);
 }
 
 //
@@ -221,46 +282,9 @@ temp_t ds18b20_get_temp_bare(DS18B20 i, RESOLUTION r)
 
 USED temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
 {
-#if 0
-  /* static */ volatile uint8_t try; try = 0;
-  /* static */ volatile timer_t rst_time; rst_time = TIMER_MS(10);
-  jmp_buf tmp_eh;
-
-  assert(ds18b20_err_handler == 0);
-  ds18b20_err_handler = &tmp_eh;
-  uint8_t errno = setjmp(tmp_eh);
-  
-#ifndef NDEBUG
-  DBG static uint8_t ds18b20_max_rty[DS18B20_NR][2];
-  if (ds18b20_max_rty[i][0] < try) {
-    ds18b20_max_rty[i][0] = try;
-    ds18b20_max_rty[i][1] = errno;
-  }
-#else
-  (void)i;
-  (void)errno;
-#endif
-
-  temp_t val;
-  if (try <= rty) {
-    if (try >= 2) {
-      ds18b20_reset(rst_time);
-      rst_time <<= 1; // double time for next try
-    }
-    try++;
-    val = ds18b20_get_temp_bare(i, r);
-  } else {
-    val = TEMP_ERR;
-  }
-  
-  ds18b20_err_handler = 0;
-
-  return val;
-#else
   temp_t val = i;
   ds18b20_get_temp_tab(1, r, rty, &val);
   return val;
-#endif
 }
 
 USED void ds18b20_get_temp_tab(DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp_t * p_tab)
@@ -284,13 +308,15 @@ USED void ds18b20_get_temp_tab(DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp
   /* this could be further optimized by by having volatile & non-volatile versions and use it appropriate */
 
 #ifndef NDEBUG
-  DBG static uint8_t ds18b20_max_rty[DS18B20_NR][2];
-  if (ds18b20_max_rty[*tab][0] < try) { // *tab index is a lie here for most types of errors
-    ds18b20_max_rty[*tab][0] = try;
-    ds18b20_max_rty[*tab][1] = errno;
+  {
+    DBG static uint8_t ds18b20_max_rty[DS18B20_NR+1][2];
+    uint8_t i = MIN(DS18B20_NR, *tab);
+    if (ds18b20_max_rty[i][0] < try) { // *tab index is a lie here for most types of errors
+      ds18b20_max_rty[i][0] = try;
+      ds18b20_max_rty[i][1] = errno;
+    }
   }
 #else
-  (void)i;
   (void)errno;
 #endif
   
@@ -308,12 +334,12 @@ USED void ds18b20_get_temp_tab(DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp
       }
 
       if (nr >= 2) {
-        for (/*DS18B20*/ uint8_t i = 0; i < DS18B20_NR; i++) {
+        for (/*DS18B20*/ uint8_t i = 0; i < ds18b20_nr; i++) {
           if (ds18b20_tab[i].resolution > r) {
             ds18b20_set_resolution(i, RESOLUTION_9);
           }
         }
-        ds18b20_match_rom(DS18B20_NR);
+        ds18b20_match_rom(ds18b20_nr);
       } else {
         ds18b20_match_rom(tab[0]);
       }
