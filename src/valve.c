@@ -99,20 +99,20 @@ void valve_control(VALVE i)
 
 void valve_open_for(VALVE i, valve_state_t amount)
 {
-  //if (valve_tab[i].goal < VALVE_STATE_MAX) { TODO: this is disabled now for safety reasond
+  if (valve_tab[i].goal < VALVE_STATE_MAX) {
     valve_state_t curr = valve_get(i);
     valve_tab[i].goal = VALVE_STATE_MAX - curr < amount ? VALVE_STATE_MAX : curr + amount;
     valve_control(i);
-  //}
+  }
 }
 
 void valve_close_for(VALVE i, valve_state_t amount)
 {
-  //if (valve_tab[i].goal > VALVE_STATE_MIN) {
+  if (valve_tab[i].goal > VALVE_STATE_MIN) {
     valve_state_t curr = valve_get(i);
     valve_tab[i].goal =                   curr < amount ? VALVE_STATE_MIN : curr - amount;
     valve_control(i);
-  //}
+  }
 }
 
 USED valve_state_t valve_get(VALVE i)
