@@ -377,20 +377,31 @@ class Gum():
   
   
   
+  #def ds18b20_get_temp(self, sensor_list = None, resolution = 0, rty = 1):
+  #  if sensor_list == None:
+  #    sensor_list = etree.parse("xml/xml.xml").getroot().find("ds18b20_list").findall("ds18b20")
+  #
+  #  arr = bytearray(len(sensor_list) * 2)
+  #  for i in range(len(sensor_list)):
+  #    arr[i * 2] = i
+  #
+  #  uart.access(1, Gum.meta['symbols']['_end']['adr'], arr)
+  #  self.exexec("ds18b20_get_temp_tab", [ len(sensor_list), resolution, rty, Gum.meta['symbols']['_end']['adr']])
+  #  arr = uart.access(0, Gum.meta['symbols']['_end']['adr'], arr)
+  # 
+  #  for i in range(len(sensor_list)):
+  #    v = tools.to_int(arr[2*i:2*i+2])
+  #    if v >= 0x8000: v -= 0x10000
+  #    v /= 256.0
+  #    sensor_list[i] = v
+  #  return sensor_list
+  
   def ds18b20_get_temp(self, sensor_list = None, resolution = 0, rty = 1):
     if sensor_list == None:
-      sensor_list = etree.parse("xml/xml.xml").getroot().find("ds18b20_list").findall("ds18b20")
+      sensor_list = [ i for i in range(read_symbol('ds18b20_nr')) ]
   
-    arr = bytearray(len(sensor_list) * 2)
-    for i in range(len(sensor_list)):
-      arr[i * 2] = i
-  
-    uart.access(1, Gum.meta['symbols']['_end']['adr'], arr)
-    self.exexec("ds18b20_get_temp_tab", [ len(sensor_list), resolution, rty, Gum.meta['symbols']['_end']['adr']])
-    arr = uart.access(0, Gum.meta['symbols']['_end']['adr'], arr)
-   
-    for i in range(len(sensor_list)):
-      v = tools.to_int(arr[2*i:2*i+2])
+    for i in sensor_list:
+      v = self.exexec("ds18b20_get_temp", [ i, resolution, rty])[0]
       if v >= 0x8000: v -= 0x10000
       v /= 256.0
       sensor_list[i] = v
