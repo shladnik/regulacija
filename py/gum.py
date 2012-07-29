@@ -398,7 +398,7 @@ class Gum():
   
   def ds18b20_get_temp(self, sensor_list = None, resolution = 0, rty = 1):
     if sensor_list == None:
-      sensor_list = [ i for i in range(read_symbol('ds18b20_nr')) ]
+      sensor_list = [ i for i in range(self.read_symbol('ds18b20_nr')) ]
   
     for i in sensor_list:
       v = self.exexec("ds18b20_get_temp", [ i, resolution, rty])[0]
