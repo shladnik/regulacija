@@ -219,7 +219,7 @@ temp_t ds18b20_get_temp_bare(DS18B20 i, RESOLUTION r)
   return ds18b20_read_temp(i);
 }
 
-temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
+USED temp_t ds18b20_get_temp(DS18B20 i, RESOLUTION r, uint8_t rty)
 {
 #if 0
   /* static */ volatile uint8_t try; try = 0;
