@@ -125,8 +125,16 @@ class Regulation(object):
     cnt = 0
     table = []
     temp_tab = gumi.ds18b20_get_temp()
-    for d in xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("ds18b20_list").findall("ds18b20"):
-      table[len(table):] = [ [ d.attrib['cname'], temp_tab[cnt], d.text ] ]
+    info = xml.etree.ElementTree.parse("xml/xml.xml").getroot().find("ds18b20_list").findall("ds18b20")
+    for d in temp_tab:
+      if cnt < len(info):
+        table[len(table):] = [ [ info[cnt].attrib['cname'], d, info[cnt].text ] ]
+      else:
+        i = cnt - len(info)
+        rom_adr = gumi.read_symbol('rom_ext') + 8 * i
+        rom = gum.uart.access(0, rom_adr, bytearray(8))
+        rom_c = "{ { " + ", ".join([ hex(b) for b in rom ]) + "} },"
+        table[len(table):] = [ [ cnt, d, rom_c ] ]
       cnt += 1
     body.append(build_table(table))
     
