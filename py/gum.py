@@ -266,49 +266,52 @@ class Gum():
   #
   
   def readcon(self, max_read=1.0):
-    buf  = Gum.meta['symbols']["print_buf"]['adr']
-    size = Gum.meta['symbols']["print_buf"]['size']
-    nr = int(max_read * size)
-    wp = self.read_symbol("print_buf_wp")
-    rp = self.read_symbol("print_buf_rp")
+    if 'print_buf' in Gum.meta['symbols']:
+      buf  = Gum.meta['symbols']["print_buf"]['adr']
+      size = Gum.meta['symbols']["print_buf"]['size']
+      nr = int(max_read * size)
+      wp = self.read_symbol("print_buf_wp")
+      rp = self.read_symbol("print_buf_rp")
 
-    if 0 <= wp < size and 0 <= rp < size:
-      ovf = 0
+      if 0 <= wp < size and 0 <= rp < size:
+        ovf = 0
   
-      data = bytearray()
-      if   wp > rp:
-        nr = min(nr, wp - rp)
-        data += uart.access(0, buf + rp, bytearray(nr))
-      elif wp < rp:
-        top    = min(nr, size - rp)
-        bottom = min(nr - top, wp)
-        nr = top + bottom
-        data += uart.access(0, buf + rp, bytearray(top))
-        if bottom > 0:
-          data[len(data):] += uart.access(0, buf, bytearray(bottom))
-      else:
-        nr = 0
+        data = bytearray()
+        if   wp > rp:
+          nr = min(nr, wp - rp)
+          data += uart.access(0, buf + rp, bytearray(nr))
+        elif wp < rp:
+          top    = min(nr, size - rp)
+          bottom = min(nr - top, wp)
+          nr = top + bottom
+          data += uart.access(0, buf + rp, bytearray(top))
+          if bottom > 0:
+            data[len(data):] += uart.access(0, buf, bytearray(bottom))
+        else:
+          nr = 0
   
-      if nr:
-        rp += nr
-        if rp >= size: rp -= size
-        self.write_symbol("print_buf_rp", rp)
+        if nr:
+          rp += nr
+          if rp >= size: rp -= size
+          self.write_symbol("print_buf_rp", rp)
    
-      ovf = self.read_symbol("print_buf_ovf")
-      wp  = self.read_symbol("print_buf_wp")
-      
-      ret_val = data.decode('utf8', 'ignore')
+        ovf = self.read_symbol("print_buf_ovf")
+        wp  = self.read_symbol("print_buf_wp")
+        
+        ret_val = data.decode('utf8', 'ignore')
   
-      if wp == rp and ovf != 0:
+        if wp == rp and ovf != 0:
+          self.write_symbol("print_buf_ovf", 0)
+          ret_val += "\n\n### LOST >=" + str(ovf) + "CHARACTERS ###\n\n"
+      else:
+        ovf = self.read_symbol("print_buf_ovf")
+        ret_val = "\n\n### CONSOLE CORRUPTED (wp: " + str(wp) + " rp: " + str(rp) + " ovf: " + str(ovf) + "). Clearing the mess. ###\n\n"
+        self.write_symbol("print_buf_rp" , 0)
+        self.write_symbol("print_buf_wp" , size - 1)
         self.write_symbol("print_buf_ovf", 0)
-        ret_val += "\n\n### LOST >=" + str(ovf) + "CHARACTERS ###\n\n"
-    else:
-      ovf = self.read_symbol("print_buf_ovf")
-      ret_val = "\n\n### CONSOLE CORRUPTED (wp: " + str(wp) + " rp: " + str(rp) + " ovf: " + str(ovf) + "). Clearing the mess. ###\n\n"
-      self.write_symbol("print_buf_rp" , 0)
-      self.write_symbol("print_buf_wp" , size - 1)
-      self.write_symbol("print_buf_ovf", 0)
-      self.write_symbol("print_buf_wp" , 0)
+        self.write_symbol("print_buf_wp" , 0)
+    
+    else: ret_val = ""
   
     return ret_val
   

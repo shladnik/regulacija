@@ -1,6 +1,6 @@
 /* pin selection */
 #define OW_PORT 1
-#define OW_BIT  3
+#define OW_BIT  3 // 7 for MiniPin
 #define OW_MASK (1 << OW_BIT)
 
 #define SMART_PULLUP 0 // TODO: implement timeout!

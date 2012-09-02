@@ -1,4 +1,6 @@
-#define SIZE 128
+#define SIZE 0
+
+#if SIZE
 #if SIZE <= 256
 typedef uint8_t print_buf_p;
 #else
@@ -139,3 +141,6 @@ void print_buf_init()
   }
 #endif
 }
+#else
+void print_buf_init() {}
+#endif
