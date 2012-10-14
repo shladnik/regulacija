@@ -128,13 +128,13 @@ static void ds18b20_match_rom(DS18B20 i)
 // FUNCTION commands
 //
 
-void ds18b20_convert_t(DS18B20 i)
+void ds18b20_convert_t(RESOLUTION r)
 {
   onewire_write8(0x44);
 #if 0 // gain ~20% of time, but external power is required!
   while (!onewire_read());
 #else
-  timer_t pu_time = TIMER_MS(750.0) >> (3 - ds18b20_tab[i].resolution);
+  timer_t pu_time = TIMER_MS(750.0) >> (3 - r);
   onewire_pullup();
   timer_sleep_ticks(pu_time);
 #endif
@@ -276,7 +276,7 @@ temp_t ds18b20_get_temp_bare(DS18B20 i, RESOLUTION r)
 {
   ds18b20_set_resolution(i, r);
   ds18b20_match_rom(i);
-  ds18b20_convert_t(i);
+  ds18b20_convert_t(r);
   return ds18b20_read_temp(i);
 }
 
@@ -311,7 +311,7 @@ USED void ds18b20_get_temp_tab(DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp
   {
     DBG static uint8_t ds18b20_max_rty[DS18B20_NR+1][2];
     uint8_t i = MIN(DS18B20_NR, *tab);
-    if (ds18b20_max_rty[i][0] < try) { // *tab index is a lie here for most types of errors
+    if (ds18b20_max_rty[i][0] < try) { // *tab index is a lie here for most types of errors when try is 1
       ds18b20_max_rty[i][0] = try;
       ds18b20_max_rty[i][1] = errno;
     }
@@ -321,40 +321,40 @@ USED void ds18b20_get_temp_tab(DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp
 #endif
   
   while (nr) {
-    if (try <= rty) {
-      if (try >= 2) {
+    try++;
+
+    if (try > rty + 1) {
+      tab[0] = TEMP_ERR;
+    } else if (nr <= 1 || try > 1) {
+      if (try > 2) {
         ds18b20_reset(rst_time);
         rst_time <<= 1; // double time for next try
       }
-      try++;
-    
+      tab[0] = ds18b20_get_temp_bare(tab[0], r);
+    } else {
       for (uint8_t i = 0; i < nr; i++) {
         DS18B20 s = tab[i];
         ds18b20_set_resolution(s, r);
       }
 
-      if (nr >= 2) {
-        for (/*DS18B20*/ uint8_t i = 0; i < ds18b20_nr; i++) {
-          if (ds18b20_tab[i].resolution > r) {
-            ds18b20_set_resolution(i, RESOLUTION_9);
-          }
-        }
-        ds18b20_match_rom(ds18b20_nr);
-      } else {
-        ds18b20_match_rom(tab[0]);
+      for (/*DS18B20*/ uint8_t i = 0; i < ds18b20_nr; i++) {
+        if (ds18b20_tab[i].resolution > r)
+          ds18b20_set_resolution(i, RESOLUTION_9);
       }
-      ds18b20_convert_t(tab[0]);
+      ds18b20_match_rom(ds18b20_nr);
+      ds18b20_convert_t(r);
 
       while (nr) {
         DS18B20 s = tab[0];
         tab[0] = ds18b20_read_temp(s);
-        tab++;
         nr--;
+        tab++;
       }
-    } else {
-      tab[0] = TEMP_ERR;
-      tab++;
+    }
+
+    if (nr) {
       nr--;
+      tab++;
       try = 0;
       rst_time = initial_rst_time;
     }
@@ -362,4 +362,3 @@ USED void ds18b20_get_temp_tab(DS18B20 p_nr, RESOLUTION p_r, uint8_t p_rty, temp
   
   ds18b20_err_handler = 0;
 }
-
