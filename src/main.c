@@ -24,7 +24,7 @@ int main()
   relay_off_all();
   valve_init();
   lcd_init();
-  ac_init();
+  keys_init();
   watchdog_start();
 
   ds18b20_init();
