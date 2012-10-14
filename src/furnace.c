@@ -11,14 +11,12 @@ void furnace_loop()
   enum {
     IN,
     OUT,
-    S_T,
     NR,
   };
 
   temp_t tab [NR] = {
     DS18B20_FURNACE_B,
     DS18B20_FURNACE_T,
-    DS18B20_HOUSE_S_T,
   };
 
   ds18b20_get_temp_tab(NR, RESOLUTION_9, 7, tab);
