@@ -103,7 +103,7 @@ void flash_write_block(uint8_t * buf, uintptr_t adr, uintptr_t len, uint8_t chec
   boot_rww_enable();
 }
 
-__attribute__((naked))
+//__attribute__((naked))
 int main()
 {
   volatile uint8_t check = BOOT_SPM_CHECK_VAL;

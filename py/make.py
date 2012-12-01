@@ -22,6 +22,7 @@ defines = {
 #  "BAUD"    : 1000000,
 #  "NDEBUG" : "",
   "__ASSERT_USE_STDERR" : "", # I have my own assert right now anyway
+  "__DELAY_BACKWARD_COMPATIBLE__" : "", # compile error with 4.7.2
   "PLAIN_CONSOLE" : 0,
 
   "BUILD_SEC"     : build_time[0],
@@ -37,8 +38,9 @@ cflags = (
 #"-g3",   # gstabs+
 #"-ggdb3", # dwarf # segmentation fault in lto1
 #"-feliminate-dwarf2-dups",
-#"-gdwarf-4",
-#"-gstrict-dwarf",
+"-gdwarf-4", "-g3",
+"-gstrict-dwarf",
+
 "-Os",
 "-mmcu=atmega32",
 #"-mmcu=atmega328p",
