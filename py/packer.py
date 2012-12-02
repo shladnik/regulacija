@@ -41,7 +41,7 @@ def update(a):
   if type(a) == str: a = tarfile.open(a, mode='r:bz2')
   else:              a = tarfile.open(fileobj = a, mode='r|bz2')
 
-  a.extractall() # TODO: local update, remote update?
+  #a.extractall() # TODO: local update, remote update?
   names = a.getnames()
   if "bootloader.bin" in names or "fw.bin" in names:
     gumi = gum.Gum()

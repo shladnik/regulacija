@@ -16,10 +16,10 @@ import packer
 build_time = tools.mcutime().get()
 
 defines = {
-  "F_CPU"   : 9216000,
-  "BAUD"    : 230400,
-#  "F_CPU"   : 16000000,
-#  "BAUD"    : 1000000,
+#  "F_CPU"   : 9216000,
+#  "BAUD"    : 230400,
+  "F_CPU"   : 16000000,
+  "BAUD"    : 1000000,
 #  "NDEBUG" : "",
   "__ASSERT_USE_STDERR" : "", # I have my own assert right now anyway
   "__DELAY_BACKWARD_COMPATIBLE__" : "", # compile error with 4.7.2
@@ -42,9 +42,9 @@ cflags = (
 "-gstrict-dwarf",
 
 "-Os",
-"-mmcu=atmega32",
-#"-mmcu=atmega328p",
 #"-v", "-save-temps", # GCC debugging
+#"-mmcu=atmega32",
+"-mmcu=atmega328p",
 "-std=gnu99",
 
 #"-fstack-usage",
@@ -140,8 +140,7 @@ sources_fw = (
 "src/config.c",
 "src/flash.c",
 "src/time.c",
-"src/keys.c",
-#"src/ac.c",
+"src/ac.c",
 )
 
 sources_bootloader = (

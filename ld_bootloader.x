@@ -5,7 +5,7 @@ MEMORY
 {
   jmp    (rx)   : ORIGIN = 0x0000, LENGTH = 128
   text   (rx)   : ORIGIN = 0x7c00, LENGTH = 32K - 0x7c00
-  data   (rw!x) : ORIGIN = 0x800060, LENGTH = 2K
+  data   (rw!x) : ORIGIN = 0x800100, LENGTH = 2K
   eeprom (rw!x) : ORIGIN = 0x810000, LENGTH = 1K
   fuse      (rw!x) : ORIGIN = 0x820000, LENGTH = 1K
   lock      (rw!x) : ORIGIN = 0x830000, LENGTH = 1K

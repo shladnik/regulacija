@@ -16,6 +16,7 @@ void watchdog_reseter()
 
 void syscheck_loop()
 {
+#if 0
   enum {
     FURNACE,
     COLLECTOR,
@@ -31,6 +32,7 @@ void syscheck_loop()
 
   if (tab[FURNACE  ] < TEMP(95) &&
       tab[COLLECTOR] < TEMP(95))
+#endif
     syscheck = 0;
 }
 
