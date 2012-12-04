@@ -1,5 +1,8 @@
-#define SIZE 0
+#define SIZE PRINT_BUF_SIZE
 
+#ifdef NDEBUG
+static FILE print_str = FDEV_SETUP_STREAM(0,              0, _FDEV_SETUP_WRITE);
+#else
 #if SIZE
 #if SIZE <= 256
 typedef uint8_t print_buf_p;
@@ -109,10 +112,8 @@ int print_buf_putc(char c, FILE * f)
   return 0;
 }
 
-#ifdef NDEBUG
-static FILE print_str = FDEV_SETUP_STREAM(0,              0, _FDEV_SETUP_WRITE);
+static FILE print_str = FDEV_SETUP_STREAM(print_buf_putc, 0, _FDEV_SETUP_WRITE);
 #else
-#if PLAIN_CONSOLE == 2
 int direct_putc(char c, FILE * f)
 {
   (void)(f);
@@ -120,9 +121,8 @@ int direct_putc(char c, FILE * f)
   UDR0 = c;
   return 0;
 }
+
 static FILE print_str = FDEV_SETUP_STREAM(direct_putc, 0, _FDEV_SETUP_WRITE);
-#else
-static FILE print_str = FDEV_SETUP_STREAM(print_buf_putc, 0, _FDEV_SETUP_WRITE);
 #endif
 #endif
 
@@ -141,6 +141,3 @@ void print_buf_init()
   }
 #endif
 }
-#else
-void print_buf_init() {}
-#endif

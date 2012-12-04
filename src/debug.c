@@ -18,9 +18,7 @@ void log_adr()
 {
 #ifndef NDEBUG
   void * ret_adr = __builtin_return_address(0);
-#if PLAIN_CONSOLE
-  printf("log_adr:%x\n", ret_adr);
-#endif
+  //if (PLAIN_CONSOLE) printf("log_adr:%p\n", ret_adr);
   DBG2CP_LOG(adr_log, ret_adr, 8);
 
   DBG2CP_VAR(adr_time, timer_now());
@@ -92,7 +90,7 @@ void __assert()
   dump_stack();
   void * ret_adr = __builtin_return_address(0);
 #if PLAIN_CONSOLE
-  printf("assert:%x\n", ret_adr);
+  printf("assert:%p\n", ret_adr);
 #endif
   DBG_LOG_FINITE(assert_log, ret_adr, 4);
   DBG_VAR(assert_last, ret_adr);

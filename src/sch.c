@@ -43,6 +43,7 @@ void sch()
       e.func(e.arg);
 #else
       DBG2CP static sch_t last_sch; last_sch = e;
+      if (PLAIN_CONSOLE) printf("sch:%x(%p,%x)\n", (uint16_t)e.func, e.arg, e.level);
       e.func(e.arg);
       last_sch = (sch_t){ 0, 0, 0 };
 #endif
