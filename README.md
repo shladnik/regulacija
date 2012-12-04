@@ -20,19 +20,19 @@ You need:
 
 Compile the code:
 
-  ./make.py
+    ./make.py
 
 Flash the flash (ideally you would do that only once, cause there is a web based bootloader available):
 
-  avrdude -c stk500v2 -P /dev/ttyUSB0 -p m328p  -U flash:w:fw.bin
+    avrdude -c stk500v2 -P /dev/ttyUSB0 -p m328p  -U flash:w:fw.bin
 
 Set the fuses:
 
-  ./py/fuse.py restore
+    ./py/fuse.py restore
 
 Start the server:
 
-  ./py/server.py
+    ./py/server.py
 
 Connect to localhost:8000. I suggest you visit the flash page first and apply update.tar.bz2 created by make, cause bootloader was not updated by avrdude.
 
