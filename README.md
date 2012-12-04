@@ -1,5 +1,3 @@
-*Not ready for public use, but if you are interested and you will ask 'wise' questions you may contact me.*
-
 About
 -----
 
@@ -11,14 +9,40 @@ It was tested on custom made system which I use for regulation and Arduino for o
 Getting Started
 ---------------
 
-You are on your own, but this will change if project get mature enough.
+*Beta - contact when you stuck*
+
+You need:
+- Arduino board
+- avr-gcc toolchain with avr-libc (I use Gentoo with crossdev)
+- avrdude
+- pyserial
+- cherrypy
+
+Compile the code:
+
+  ./make.py
+
+Flash the flash (ideally you would do that only once, cause there is a web based bootloader available):
+
+  avrdude -c stk500v2 -P /dev/ttyUSB0 -p m328p  -U flash:w:fw.bin
+
+Set the fuses:
+
+  ./py/fuse.py restore
+
+Start the server:
+
+  ./py/server.py
+
+Connect to localhost:8000. I suggest you visit the flash page first and apply update.tar.bz2 created by make, cause bootloader was not updated by avrdude.
+
 
 Contributing
 ------------
 
-I am on my own, but this will change if project get mature enough.
+Is very welcome and that's why this project is here. If I would have all the time on the world I would code everything myself and I would be rich.
 
 License
 -------
 
-GPL, and this will NOT change even if project get mature enough.
+GPL
