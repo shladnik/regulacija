@@ -155,7 +155,7 @@ DBG_ISR(USART_RX_vect, ISR_BLOCK)
 
 DBG_ISR(USART_UDRE_vect, ISR_BLOCK)
 {
-#if PLAIN_CONSOLE
+#if PLAIN_CONSOLE && PRINT_BUF_SIZE
   if (print_buf_empty()) {
     if (print_buf_ovf) {
       uint8_t ovf = print_buf_ovf;
@@ -164,8 +164,9 @@ DBG_ISR(USART_UDRE_vect, ISR_BLOCK)
     } else {
       UCSR0B &= ~(1 << UDRIE0);
     }
-  } else
+  } else {
     UDR0 = print_buf_read();
+  }
 #else
   uint8_t byte;
 
@@ -226,9 +227,5 @@ void uart_init()
 #else
   UCSR0C = (3 << UCSZ00);
 #endif
-#if 0 //PLAIN_CONSOLE
-  UCSR0B = (1 << TXEN0);
-#else
   UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
-#endif
 }
