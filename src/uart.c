@@ -4,7 +4,12 @@ static bool     use_2x     = USE_2X;
 
 void uart_set_baud()
 {
+#if __AVR_ATmega32__
+  UBRR0H = ubrr_value >> 8;
+  UBRR0L = ubrr_value >> 0;
+#else
   UBRR0 = ubrr_value;
+#endif
   UCSR0A = (UCSR0A & ~(1 << U2X0)) | (use_2x ? 1 << U2X0 : 0);
 }
 
