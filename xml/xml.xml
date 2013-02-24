@@ -30,6 +30,12 @@
   <ds18b20 rom="2868561502000083" cname="RADIATOR_D">
     Radiatorji, povratni vod
   </ds18b20>
+  <ds18b20 rom="288462dd02000069" cname="STABLE_0"  >
+    Zalogovnik hlev, bojler
+  </ds18b20>
+  <ds18b20 rom="287383dd02000089" cname="OUTSIDE"   >
+    Zunaj
+  </ds18b20>
 <!--
   <ds18b20 rom="282f84dd0200008b" cname="STABLE_0"  >
     TODO Zalogovnik hlev, zgoraj
