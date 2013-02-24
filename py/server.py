@@ -453,7 +453,7 @@ config = {
     #'server.ssl_private_key'    : 'security/home_cert.key',
     
     # Authentication
-    #'tools.auth_digest.on'      : True,
+    'tools.auth_digest.on'      : True,
     'tools.auth_digest.realm'   : 'home',
     'tools.auth_digest.get_ha1' : cherrypy.lib.auth_digest.get_ha1_file_htdigest('security/htdigest'),
     'tools.auth_digest.key'     : 'a565c27146791cfb',
