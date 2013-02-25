@@ -1,6 +1,6 @@
 void radiator_loop()
 { 
-  temp_t collector = ds18b20_get_temp(DS18B20_COLLECTOR , RESOLUTION_9, 7);
+  temp_t collector = ds18b20_get_temp(DS18B20_OUTSIDE , RESOLUTION_9, 7);
 
   temp_t read_0 = ds18b20_get_temp(DS18B20_RADIATOR_U, RESOLUTION_11, 7);
   _delay_ms(1000);
