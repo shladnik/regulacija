@@ -44,6 +44,7 @@ class Gum():
         except TypeError:
           ports = ( port, )
     if not ports: raise Exception("No port found!")
+    ports = tuple(ports)
     
     rates = ( 38400, 230400, 1000000, 115200, 9600 )
     #rates = rates + tuple(reversed(sorted(tuple(set(uart.uart.BAUDRATES) - set(rates)))))
