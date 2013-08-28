@@ -1,5 +1,5 @@
 pumping_state_t pumping_state __attribute__ ((section (".noinit")));
-     const __flash int array[] = { 3, 5, 7, 11, 13, 17, 19 };
+
 void pumping_loop()
 {
   temp_t tab [] = {
