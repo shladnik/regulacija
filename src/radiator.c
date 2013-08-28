@@ -26,7 +26,7 @@ void radiator_loop()
   if (dir) valve_close_for(VALVE_RADIATOR, amount);
   else     valve_open_for (VALVE_RADIATOR, amount);
  
-  if (valve_closed(VALVE_RADIATOR) || outside > TEMP(10)) // quick dirty hack - father wants radiator in bathroom warm, maybe we can achieve that by heating without pump
+  if (valve_closed(VALVE_RADIATOR) || outside > TEMP(15)) // quick dirty hack - father wants radiator in bathroom warm, maybe we can achieve that by heating without pump
     relay_off(RELAY_PUMP_RADIATOR);
   else
     relay_on (RELAY_PUMP_RADIATOR);

@@ -26,12 +26,18 @@ void furnace_loop()
     valve_open(VALVE_FURNACE);
     DBG_CNT(furnace_failback);
   } else {
-    if ((tab[OUT] - tab[IN]) > TEMP(5)) relay_on (RELAY_PUMP_FURNACE);
-    else                                relay_off(RELAY_PUMP_FURNACE);
+    CONFIG static temp_t furnace_goal_in  = TEMP(60);
+    CONFIG static temp_t furnace_goal_out = TEMP(80);
+    temp_t goal_in  = CONFIG_GET(furnace_goal_in );
+    temp_t goal_out = CONFIG_GET(furnace_goal_out);
     
-    temp_t out_err = tab[OUT] - TEMP(80);
-    temp_t goal = MAX(TEMP(60), tab[OUT] - TEMP(15));
-    if (out_err > TEMP(0)) goal = MIN(goal, tab[IN] - out_err);
+    if ((tab[OUT] - tab[IN]) > TEMP(5) || tab[IN] > goal_in)
+        relay_on (RELAY_PUMP_FURNACE);
+    else
+        relay_off(RELAY_PUMP_FURNACE);
+  
+    temp_t out_err = tab[OUT] - goal_out;
+    temp_t goal = goal_in - MAX(out_err, goal_in - TEMP_MAX);
     
     /* apply goal ... */
     temp_t curr  = ds18b20_get_temp(DS18B20_FURNACE_B, RESOLUTION_12, 7);
