@@ -29,7 +29,7 @@ class Gum():
     except EOFError:
       pass
     else:
-      if not port: port = unpickled['port']
+      #if not port: port = unpickled['port']
       if not rate: rate = unpickled['rate']
       if not meta: meta = unpickled['meta']
 
@@ -62,6 +62,7 @@ class Gum():
               break;
             except uart.ProtocolErr as inst:
               print("Failed:", uart.uart.port, uart.uart.baudrate, "reason:", inst)
+              uart.uart.close()
               if uart.uart.baudrate == rates[-1]: raise
               else:                               continue
         except uart.ProtocolErr:
