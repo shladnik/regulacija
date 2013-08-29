@@ -10,9 +10,7 @@ Design
 ------
 
 This is how general idea looks like:
-
-
-
+```
         Control interface               |   Autonomous base functionality
                                         |
  ___________________________________    |     
@@ -27,6 +25,7 @@ This is how general idea looks like:
 |___________________________________|   |
                                         |
                                         |
+```
 
 One important block here is BINFO. It consists of data gathered while compiling
 uC source code:
@@ -46,8 +45,10 @@ However, there is one thing lacking here to make this even better - types.
 
 This is roughly what is currently done:
 
+```
 uC source code -> GCC --> elf --> uC binary
                               `-> objdump ->BINFO
+```
 
 To get info about types and other useful stuff, DWARF debug info is the best
 way to go as of my knowledge. However, it seems like a major task so any ideas
