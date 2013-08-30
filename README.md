@@ -58,7 +58,7 @@ done via this interface using knowledge included in BINFO. So this will not
 only affect control interface, but also heavily ease debugging.
 
 
-These things are currently available in uC:
+These are features that are currently supported on uC:
 - bootloader (update-able)
 - scheduler (no priorities yet)
 - loops manager 
@@ -68,12 +68,14 @@ These things are currently available in uC:
 - non-volatile configuration (flash)
 - watchdog
 - stack checking
+
 External:
 - PIO abstraction
 - 1-Wire DS18B20 temperature support
 - relays
 - valves
 - UART (to PC)
+
 And some stuff that is relevant for my specific setup:
 - solar collectors control (pump)
 - furnace control (valve, pump)
