@@ -11,20 +11,29 @@ Design
 
 This is how general idea looks like:
 ```
-        Control interface               |   Autonomous base functionality
-                                        |
- ___________________________________    |     
-| PC                                |   |     
-|  __________        _____________  |   |    ____  
-| | CherryPy |      | Python glue | |   |   |    | <- sensors (thermal)
-| | HTTP     | <--> | logic       | | <-+-> | uC |
-| | server   |      |_____________| |   |   |____| -> devices (valves, relays)
-| |__________|            /\        |   |
-|                         ||        |   |
-|                      [ BINFO ]    |   |
-|___________________________________|   |
-                                        |
-                                        |
+        Control interface             |   Autonomous base functionality
+                                      |
+*---------------------------------*   |     
+| PC                              |   |     
+| *--------*      *-------------* |   |   *----*       
+| | Web    | ---> | Python glue | |   |   |    | <- sensors (thermal)
+| | server | <--- | logic       | | <===> | uC |
+| *--------*      *-------------* |   |   |    | -> devices (valves, pumps)
+|                         /\      |   |   *----*
+|                         ||      |   |     ^
+|                      [ BINFO ]  |   |     ^
+*-------------------------^-------*   |     ^
+                          ^           |     ^
+ Run-time                 ^           |     ^
+--------------------------^-----------------^---------------------------------
+ Compile-time             ^                 ^
+                    *------------*          ^
+                    |DWARF parser|          ^
+          *------*  *------------*          ^
+          | uC   |        ^                 ^
+          | code | ---> [elf]  ---------> [bin]
+          | base |
+          *------*
 ```
 
 One important block here is BINFO. It consists of data gathered while compiling
