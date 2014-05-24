@@ -26,7 +26,7 @@ void furnace_loop()
     valve_open(VALVE_FURNACE);
     DBG_CNT(furnace_failback);
   } else {
-    CONFIG static temp_t furnace_goal_in  = TEMP(60);
+    CONFIG static temp_t furnace_goal_in  = TEMP(70);
     CONFIG static temp_t furnace_goal_out = TEMP(80);
     temp_t goal_in  = CONFIG_GET(furnace_goal_in );
     temp_t goal_out = CONFIG_GET(furnace_goal_out);
@@ -44,7 +44,9 @@ void furnace_loop()
     _delay_ms(1000);
     temp_t curr2 = ds18b20_get_temp(DS18B20_FURNACE_B, RESOLUTION_12, 7);
     
-    curr = curr2 + (curr2 - curr) * 16;
+    CONFIG static uint8_t furnace_mul = 32;
+    const uint8_t mul = CONFIG_GET(furnace_mul);
+    curr = curr2 + (curr2 - curr) * mul;
   
     bool dir = curr < goal;
     temp_t diff = dir ? goal - curr : curr - goal;
