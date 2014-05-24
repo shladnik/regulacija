@@ -20,16 +20,19 @@ void pumping_loop()
   temp_t t_stable_s_t = tab[4];
   temp_t t_collector  = tab[5];
 
-  CONFIG static temp_t pumping_diff_on  = TEMP(5);
-  CONFIG static temp_t pumping_diff_off = TEMP(2);
+  CONFIG static temp_t pumping_diff_h2s  = TEMP(35);
+  CONFIG static temp_t pumping_diff_s2h  = TEMP(5);
+  CONFIG static temp_t pumping_diff_hist = TEMP(3);
 
-  temp_t diff_on       () { return CONFIG_GET(pumping_diff_on ); }
-  temp_t diff_off      () { return CONFIG_GET(pumping_diff_off); }
+  temp_t diff_h2s_on   () { return CONFIG_GET(pumping_diff_h2s ); }
+  temp_t diff_h2s_off  () { return diff_h2s_on + CONFIG_GET(pumping_diff_hist); }
+  temp_t diff_s2h_on   () { return CONFIG_GET(pumping_diff_s2h ); }
+  temp_t diff_s2h_off  () { return diff_s2h_on + CONFIG_GET(pumping_diff_hist); }
   temp_t diff          () { return t_house_s_t - t_stable_s_t; }
-  bool diff_h2s        () { return  diff() >= diff_on() || (pumping_state == PUMPING_H2S &&  diff() >= diff_off()); }
-  bool diff_s2h        () { return -diff() >= diff_on() || (pumping_state == PUMPING_S2H && -diff() >= diff_off()); }
-  CONFIG static temp_t pumping_furnace_t_th = TEMP(75);
-  CONFIG static temp_t pumping_house_s_b_th = TEMP(55);
+  bool diff_h2s        () { return  diff() >= diff_h2s_on() || (pumping_state == PUMPING_H2S &&  diff() >= diff_h2s_off()); }
+  bool diff_s2h        () { return -diff() >= diff_s2h_on() || (pumping_state == PUMPING_S2H && -diff() >= diff_s2h_off()); }
+  CONFIG static temp_t pumping_furnace_t_th = TEMP(78);
+  CONFIG static temp_t pumping_house_s_b_th = TEMP(72);
   bool furnace         () { return t_furnace_t >= CONFIG_GET(pumping_furnace_t_th) && t_house_s_b >= CONFIG_GET(pumping_house_s_b_th); }
   bool collector       () { return t_collector > MIN(t_house_s_b, t_stable_s_b) && t_house_s_b < t_stable_s_b; }
   date_t mms = (date_t){ 0, 0,  4, -1, -1, -1, -1 };
