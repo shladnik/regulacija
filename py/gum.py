@@ -57,13 +57,13 @@ class Gum():
         build = False
         try:
           for uart.uart.baudrate in rates:
+            uart.uart.close()
             uart.uart.open()
             try:
               build = uart.access(0, 0x60, bytearray(8))
               break;
             except uart.ProtocolErr as inst:
               print("Failed:", uart.uart.port, uart.uart.baudrate, "reason:", inst)
-              uart.uart.close()
               if uart.uart.baudrate == rates[-1]: raise
               else:                               continue
         except uart.ProtocolErr:
