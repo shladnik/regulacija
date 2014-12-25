@@ -440,7 +440,7 @@ class Regulation(object):
 
 config = {
   'global' : {
-    'engine.autoreload_on'      : False,
+    'engine.autoreload.on'      : False,
     #'server.socket_host'        : 'stefuc.homeip.net',
     'server.socket_host'        : '0.0.0.0',
     'server.socket_port'        : 8000,
