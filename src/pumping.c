@@ -20,7 +20,7 @@ void pumping_loop()
   temp_t t_stable_s_t = tab[4];
   temp_t t_collector  = tab[5];
 
-  CONFIG static temp_t pumping_diff_h2s  = TEMP(35);
+  CONFIG static temp_t pumping_diff_h2s  = TEMP(20);
   CONFIG static temp_t pumping_diff_s2h  = TEMP(5);
   CONFIG static temp_t pumping_diff_hist = TEMP(3);
 
@@ -35,10 +35,10 @@ void pumping_loop()
   CONFIG static temp_t pumping_house_s_b_th = TEMP(72);
   bool furnace         () { return t_furnace_t >= CONFIG_GET(pumping_furnace_t_th) && t_house_s_b >= CONFIG_GET(pumping_house_s_b_th); }
   bool collector       () { return t_collector > MIN(t_house_s_b, t_stable_s_b) && t_house_s_b < t_stable_s_b; }
-  date_t mms = (date_t){ 0, 0,  4, -1, -1, -1, -1 };
-  date_t mme = (date_t){ 0, 0,  8, -1, -1, -1, -1 };
+  date_t mms = (date_t){ 0, 0,  3, -1, -1, -1, -1 };
+  date_t mme = (date_t){ 0, 0,  6, -1, -1, -1, -1 };
   date_t mes = (date_t){ 0, 0, 16, -1, -1, -1, -1 };
-  date_t mee = (date_t){ 0, 0, 20, -1, -1, -1, -1 };
+  date_t mee = (date_t){ 0, 0, 19, -1, -1, -1, -1 };
   bool milking_time    () { return (timecmp_lt(mms, date) && timecmp_ge(mme, date)) || (timecmp_lt(mes, date) && timecmp_ge(mee, date)); }
   //bool milking_time    () { return 1; }
   bool h2s             () { return  milking_time() && diff_h2s(); }
