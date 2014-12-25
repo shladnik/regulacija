@@ -4,8 +4,7 @@ bool config_range(uintptr_t adr, uintptr_t len)
   extern uint8_t __config_end;
   uintptr_t first = adr;
   uintptr_t last  = adr + len - 1;
-  return (uintptr_t)&__config_start <= first && first < (uintptr_t)&__config_end &&
-         (uintptr_t)&__config_start <= last  && last  < (uintptr_t)&__config_end;
+  return first <= last && (uintptr_t)&__config_start <= first && last < (uintptr_t)&__config_end;
 }
 
 bool meta_range(uintptr_t adr, uintptr_t len)
@@ -14,19 +13,16 @@ bool meta_range(uintptr_t adr, uintptr_t len)
   extern uint8_t __meta_end;
   uintptr_t first = adr;
   uintptr_t last  = adr + len - 1;
-  return (uintptr_t)&__meta_start <= first && first < (uintptr_t)&__meta_end &&
-         (uintptr_t)&__meta_start <= last  && last  < (uintptr_t)&__meta_end;
+  return first <= last && (uintptr_t)&__meta_start <= first && last < (uintptr_t)&__meta_end;
 }
 
 bool writeallow_range(uintptr_t adr, uintptr_t len)
 {
-  extern uint8_t __fw_end;
-  uintptr_t start = (uintptr_t)&__fw_end | (SPM_PAGESIZE - 1);
+  extern uint8_t __bootloader_adr;
   extern uint8_t __flash_size;
   uintptr_t first = adr;
   uintptr_t last  = adr + len - 1;
-  return start <= first && first < (uintptr_t)&__flash_size &&
-         start <= last  && last  < (uintptr_t)&__flash_size;
+  return first <= last && (uintptr_t)&__bootloader_adr <= first && last < (uintptr_t)&__flash_size;
 }
 
 __attribute__((section(".flash_write")))
