@@ -151,25 +151,7 @@ SECTIONS
     *(.fini0)  /* Infinite loop after program termination.  */
     KEEP (*(.fini0))
      _etext = . ;
-
-    PROVIDE (__meta_start = .) ;
-    *(.meta)
-    PROVIDE (__meta_end = .) ;
-    . = ALIGN(__spm_blocksize);
-    PROVIDE (__config_start = .) ;
-    *(.config)
-    PROVIDE (__config_end = .) ;
-    . = ALIGN(__spm_blocksize);
-  }  > text
-
-  .flash_write 0x7000:
-  {
-    PROVIDE (__interruptable1_start = .) ;
-    *(.flash_write)
-    PROVIDE (__interruptable1_end = .) ;
-  } > text
-
-  __fw_end = . ;
+  }  > text =0xffcf
 
   .data	  : AT (ADDR (.text) + SIZEOF (.text))
   {
@@ -183,7 +165,27 @@ SECTIONS
     . = ALIGN(2);
      _edata = . ;
      PROVIDE (__data_end = .) ;
-  }  > data
+  }  > data =0xffcf
+
+   __data_load_start = LOADADDR(.data);
+   __data_load_end = __data_load_start + SIZEOF(.data);
+
+  .text_after_data __data_load_end :
+  {
+    PROVIDE (__meta_start = .) ;
+    *(.meta)
+    PROVIDE (__meta_end = .) ;
+    . = ALIGN(__spm_blocksize);
+    PROVIDE (__config_start = .) ;
+    *(.config)
+    PROVIDE (__config_end = .) ;
+    . = ALIGN(__spm_blocksize) ;
+    . = ALIGN(0x7000);
+    PROVIDE (__interruptable1_start = .) ;
+    *(.flash_write)
+    PROVIDE (__interruptable1_end = .) ;
+    . = ALIGN(__bootloader_adr) ;
+  } > text =0xffcf
 
   .bss (NOLOAD)  : AT (ADDR (.bss))
   {
@@ -198,9 +200,6 @@ SECTIONS
      
      PROVIDE (__bss_end = .) ;
   }  > data
-
-   __data_load_start = LOADADDR(.data);
-   __data_load_end = __data_load_start + SIZEOF(.data);
 
   /* Global data not cleared after reset.  */
   .noinit  :

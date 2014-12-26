@@ -13,6 +13,10 @@ MEMORY
 }
 SECTIONS
 {
+  __spm_blocksize = 128 ;
+  __flash_size = 32K ;
+  __bootloader_adr = __flash_size - 1K;
+
   /* Read-only sections, merged into text segment: */
   .hash          : { *(.hash)		}
   .dynsym        : { *(.dynsym)		}
@@ -152,17 +156,7 @@ SECTIONS
     KEEP (*(.fini0))
      _etext = . ;
   }  > text
-  .jmp : AT (ADDR (.text) + SIZEOF (.text))
-  {
-    *(.jmp)
-  } > jmp
-  __jmp_load_start = LOADADDR(.jmp);
-  __jmp_load_end = __jmp_load_start + SIZEOF(.jmp);
-  .bootloader   :
-  {
-    *(.bootloader)
-  }  > text
-  .data	  : AT (ADDR (.text) + SIZEOF (.text) + SIZEOF (.jmp))
+  .data	  : AT (ADDR (.text) + SIZEOF (.text))
   {
      PROVIDE (__data_start = .) ;
     *(.data)
@@ -173,7 +167,20 @@ SECTIONS
     . = ALIGN(2);
      _edata = . ;
      PROVIDE (__data_end = .) ;
-  }  > data
+  }  > data =0xffcf
+   __data_load_start = LOADADDR(.data);
+   __data_load_end = __data_load_start + SIZEOF(.data);
+  .jmp : AT (__data_load_end) 
+  {
+    *(.jmp)
+  } > jmp =0xffcf
+  __jmp_load_start = LOADADDR(.jmp);
+  __jmp_load_end = __jmp_load_start + SIZEOF(.jmp);
+  .text_fill __jmp_load_end :
+  {
+    /* it doesn't work for some reason, but want to keep it here as a reminder */
+    . = ALIGN(__flash_size) ;
+  } > text =0xffcf
   .bss   : AT (ADDR (.bss))
   {
      PROVIDE (__bss_start = .) ;
@@ -182,8 +189,6 @@ SECTIONS
     *(COMMON)
      PROVIDE (__bss_end = .) ;
   }  > data
-   __data_load_start = LOADADDR(.data);
-   __data_load_end = __data_load_start + SIZEOF(.data);
   /* Global data not cleared after reset.  */
   .noinit  :
   {
