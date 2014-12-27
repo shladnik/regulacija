@@ -79,21 +79,24 @@ SECTIONS
     *(.vectors)
     KEEP(*(.vectors))
     /* For data that needs to reside in the lower 64k of progmem.  */
-    *(.progmem.gcc*)
-    *(.progmem*)
+     *(.progmem.gcc*)
+    /* PR 13812: Placing the trampolines here gives a better chance
+       that they will be in range of the code that uses them.  */
     . = ALIGN(2);
      __trampolines_start = . ;
     /* The jump trampolines for the 16-bit limited relocs will reside here.  */
     *(.trampolines)
-    *(.trampolines*)
+     *(.trampolines*)
      __trampolines_end = . ;
+     *(.progmem*)
+    . = ALIGN(2);
     /* For future tablejump instruction arrays for 3 byte pc devices.
        We don't relax jump/call instructions within these sections.  */
     *(.jumptables)
-    *(.jumptables*)
+     *(.jumptables*)
     /* For code that needs to reside in the lower 128k progmem.  */
     *(.lowtext)
-    *(.lowtext*)
+     *(.lowtext*)
      __ctors_start = . ;
      *(.ctors)
      __ctors_end = . ;
@@ -124,12 +127,12 @@ SECTIONS
     KEEP (*(.init8))
     *(.init9)  /* Call main().  */
     KEEP (*(.init9))
-    PROVIDE (__interruptable0_start = .) ;
+    PROVIDE (__interruptible0_start = .) ;
     *(.text)
     . = ALIGN(2);
-    *(.text.*)
+     *(.text.*)
     . = ALIGN(2);
-    PROVIDE (__interruptable0_end = .) ;
+    PROVIDE (__interruptible0_end = .) ;
     *(.fini9)  /* _exit() starts here.  */
     KEEP (*(.fini9))
     *(.fini8)
@@ -152,24 +155,24 @@ SECTIONS
     KEEP (*(.fini0))
      _etext = . ;
   }  > text =0xffcf
-
   .data	  : AT (ADDR (.text) + SIZEOF (.text))
   {
      PROVIDE (__data_start = .) ;
-    *(.build)
-    *(.data)
-    *(.data*)
+     *(.build)
+    /* --gc-sections will delete empty .data. This leads to wrong start
+       addresses for subsequent sections because -Tdata= from the command
+       line will have no effect, see PR13697.  Thus, keep .data  */
+    KEEP (*(.data))
+     *(.data*)
     *(.rodata)  /* We need to include .rodata here if gcc is used */
-    *(.rodata*) /* with -fdata-sections.  */
+     *(.rodata*) /* with -fdata-sections.  */
     *(.gnu.linkonce.d*)
     . = ALIGN(2);
      _edata = . ;
      PROVIDE (__data_end = .) ;
   }  > data =0xffcf
-
    __data_load_start = LOADADDR(.data);
    __data_load_end = __data_load_start + SIZEOF(.data);
-
   .text_after_data __data_load_end :
   {
     PROVIDE (__meta_start = .) ;
@@ -181,52 +184,44 @@ SECTIONS
     PROVIDE (__config_end = .) ;
     . = ALIGN(__spm_blocksize) ;
     . = ALIGN(0x7000);
-    PROVIDE (__interruptable1_start = .) ;
+    PROVIDE (__interruptible1_start = .) ;
     *(.flash_write)
-    PROVIDE (__interruptable1_end = .) ;
+    PROVIDE (__interruptible1_end = .) ;
     . = ALIGN(__bootloader_adr) ;
   } > text =0xffcf
-
-  .bss (NOLOAD)  : AT (ADDR (.bss))
+  .bss (NOLOAD) : AT (ADDR (.bss))
   {
      PROVIDE (__bss_start = .) ;
     *(.bss)
-    *(.bss*)
+     *(.bss*)
     *(COMMON)
-     
      PROVIDE (__dbg2cp_start = .) ;
     *(.dbg2cp)
      PROVIDE (__dbg2cp_end = .) ;
-     
      PROVIDE (__bss_end = .) ;
   }  > data
-
   /* Global data not cleared after reset.  */
-  .noinit  :
+  .noinit (NOLOAD) :
   {
      PROVIDE (__noinit_start = .) ;
     *(.noinit*)
      PROVIDE (__noinit_end = .) ;
   }  > data
-
   .dbg (NOLOAD) :
   {
      PROVIDE (__dbg_start = .) ;
     *(.dbg)
-     
      __dbgcp_start = . ;
      . += __dbg2cp_end - __dbg2cp_start ;
      __dbgcp_end = . ;
-     
      PROVIDE (__dbg_end = .) ;
+     _end = . ;
+     PROVIDE (__heap_start = .) ;
   }  > data
-  
-   _end = . ;
-   __heap_start = . ;
-
   .eeprom  :
   {
-    *(.eeprom*)
+    /* See .data above...  */
+    KEEP(*(.eeprom*))
      __eeprom_end = . ;
   }  > eeprom
   .fuse  :
@@ -252,6 +247,7 @@ SECTIONS
   .stab.index 0 : { *(.stab.index) }
   .stab.indexstr 0 : { *(.stab.indexstr) }
   .comment 0 : { *(.comment) }
+  .note.gnu.build-id : { *(.note.gnu.build-id) }
   /* DWARF debug sections.
      Symbols in the DWARF debugging sections are relative to the beginning
      of the section so we begin them at 0.  */
@@ -265,11 +261,21 @@ SECTIONS
   .debug_aranges  0 : { *(.debug_aranges) }
   .debug_pubnames 0 : { *(.debug_pubnames) }
   /* DWARF 2 */
-  .debug_info     0 : { *(.debug_info) *(.gnu.linkonce.wi.*) }
+  .debug_info     0 : { *(.debug_info .gnu.linkonce.wi.*) }
   .debug_abbrev   0 : { *(.debug_abbrev) }
-  .debug_line     0 : { *(.debug_line) }
+  .debug_line     0 : { *(.debug_line .debug_line.* .debug_line_end ) }
   .debug_frame    0 : { *(.debug_frame) }
   .debug_str      0 : { *(.debug_str) }
   .debug_loc      0 : { *(.debug_loc) }
   .debug_macinfo  0 : { *(.debug_macinfo) }
+  /* SGI/MIPS DWARF 2 extensions */
+  .debug_weaknames 0 : { *(.debug_weaknames) }
+  .debug_funcnames 0 : { *(.debug_funcnames) }
+  .debug_typenames 0 : { *(.debug_typenames) }
+  .debug_varnames  0 : { *(.debug_varnames) }
+  /* DWARF 3 */
+  .debug_pubtypes 0 : { *(.debug_pubtypes) }
+  .debug_ranges   0 : { *(.debug_ranges) }
+  /* DWARF Extension.  */
+  .debug_macro    0 : { *(.debug_macro) }
 }

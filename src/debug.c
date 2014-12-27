@@ -32,12 +32,12 @@ INLINE void isr_enter()
 {
   uintptr_t ret_adr = (uintptr_t)__builtin_return_address(0);
   DBG2CP_LOG(isr_return, ret_adr, 8);
-  extern uint8_t __interruptable0_start;
-  extern uint8_t __interruptable0_end;
-  extern uint8_t __interruptable1_start;
-  extern uint8_t __interruptable1_end;
-  assert((((uintptr_t)&__interruptable0_start)>>1 <= ret_adr && ret_adr < ((uintptr_t)&__interruptable0_end)>>1) ||
-         (((uintptr_t)&__interruptable1_start)>>1 <= ret_adr && ret_adr < ((uintptr_t)&__interruptable1_end)>>1));
+  extern uint8_t __interruptible0_start;
+  extern uint8_t __interruptible0_end;
+  extern uint8_t __interruptible1_start;
+  extern uint8_t __interruptible1_end;
+  assert((((uintptr_t)&__interruptible0_start)>>1 <= ret_adr && ret_adr < ((uintptr_t)&__interruptible0_end)>>1) ||
+         (((uintptr_t)&__interruptible1_start)>>1 <= ret_adr && ret_adr < ((uintptr_t)&__interruptible1_end)>>1));
   log_adr();
 }
 
