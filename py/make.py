@@ -38,8 +38,9 @@ cflags = (
 #"-g3",   # gstabs+
 #"-ggdb3", # dwarf # segmentation fault in lto1
 #"-feliminate-dwarf2-dups",
-"-gdwarf-4", "-g3",
-"-gstrict-dwarf",
+#"-gdwarf-4", "-g3",
+"-g3",
+#"-gstrict-dwarf",
 
 "-Os",
 "-mmcu=atmega32",
@@ -61,12 +62,13 @@ cflags = (
 "-fno-split-wide-types",
 "-funsigned-char",
 "-flto",
+#"-fdiagnostics-color=auto",
 
-# throw out unneeded code - this seems to have no effect when -combine -fwhole-program is used
-#"-fdata-sections",
-#"-ffunction-sections",
-#"-Wl,-gc-sections,-print-gc-sections",
-#"-Wl,--relax", #TODO retry - that used to work but having segmentation faults now (8.12.2011); works with -gc-sections (27.6.2012)
+# throw out unneeded code
+"-fdata-sections",
+"-ffunction-sections",
+#"-Wl,-gc-sections,-print-gc-sections", # This removes some of my function that are only used by exexec (despite used attribute)
+"-Wl,--relax",
 
 # select printf
 #"-Wl,-u,vfprintf", "-lprintf_min",
