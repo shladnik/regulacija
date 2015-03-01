@@ -36,11 +36,7 @@ defines = {
 
 cflags = (
 #"-g3",   # gstabs+
-#"-ggdb3", # dwarf # segmentation fault in lto1
-#"-feliminate-dwarf2-dups",
-#"-gdwarf-4", "-g3",
-"-g3",
-#"-gstrict-dwarf",
+"-ggdb3",
 
 "-Os",
 "-mmcu=atmega32",
@@ -62,7 +58,6 @@ cflags = (
 "-fno-split-wide-types",
 "-funsigned-char",
 "-flto",
-#"-fdiagnostics-color=auto",
 
 # throw out unneeded code
 "-fdata-sections",
