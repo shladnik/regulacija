@@ -1,7 +1,7 @@
 #define SCH_QUEUE_LEN 16
 
 static volatile sch_t queue[SCH_QUEUE_LEN];
-static volatile uint8_t wp;
+static uint8_t wp;
 static uint8_t rp;
 
 static uint8_t pinc(uint8_t p)
@@ -32,7 +32,7 @@ void sch()
   while (1) {
     schcheck = 0;
 
-    uint8_t level = wp - rp;
+    uint8_t level = ((volatile uint8_t)wp) - rp;
     if (level >= SCH_QUEUE_LEN) level += SCH_QUEUE_LEN;
 
     if (level) {
