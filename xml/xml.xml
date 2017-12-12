@@ -9,9 +9,6 @@
   <ds18b20 rom="28eacece010000ff" cname="HOUSE_S_B" >
     Zalogovnik hisa, spodaj
   </ds18b20>
-  <ds18b20 rom="288462dd02000069" cname="STABLE_0"  >
-    Zalogovnik hlev, bojler
-  </ds18b20>
   <ds18b20 rom="2871ebef01000063" cname="STABLE_S_T">
     Zalogovnik hlev, pod bojlerjem
   </ds18b20>
@@ -37,6 +34,9 @@
     Radiatorji, povratni vod
   </ds18b20>
 <!--
+  <ds18b20 rom="288462dd02000069" cname="STABLE_0"  >
+    Zalogovnik hlev, bojler
+  </ds18b20>
   <ds18b20 rom="282f84dd0200008b" cname="STABLE_0"  >
     TODO Zalogovnik hlev, zgoraj
   </ds18b20>
