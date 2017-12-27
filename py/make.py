@@ -109,13 +109,13 @@ includes = (
 
 sources_fw = (
 "src/common.c",
+"src/clock.c",
 "src/main.c",
 "src/timer.c",
 "src/cron.c",
 "src/debug.c",
 "src/sch.c",
 "src/timer_q.c",
-"src/clock.c",
 "src/uart.c",
 "src/crc8.c",
 "src/onewire.c",
@@ -186,15 +186,17 @@ def compile(sources, name):
 
   # Defines
   deftmp = "deftmp.c"
+  deftmp_out = "deftmp_out.c"
   cc = open(deftmp, "w")
   subprocess.Popen(["cat"] + list(sources), stdout = cc)
   cc.close()
-  d = subprocess.Popen(base_cmd + ["-dM", "-E", deftmp, "-o", deftmp])
+  d = subprocess.Popen(base_cmd + ["-dM", "-E", deftmp, "-o", deftmp_out])
   d.communicate()
   if d.returncode: return d.returncode
   global macros
-  macros = macrodump.macrodump(deftmp)
+  macros = macrodump.macrodump(deftmp_out)
   os.remove(deftmp)
+  os.remove(deftmp_out)
 
   #subprocess.Popen(["avr-objdump", "-g", name + ".obj",], stdout = open("test_c_dump.c", 'w')).communicate()
   subprocess.Popen(["avr-size", "-A", name + ".obj"]).communicate()
