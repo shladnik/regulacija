@@ -25,9 +25,9 @@ void pumping_loop()
   CONFIG static temp_t pumping_diff_hist = TEMP(3);
 
   temp_t diff_h2s_on   () { return CONFIG_GET(pumping_diff_h2s ); }
-  temp_t diff_h2s_off  () { return diff_h2s_on + CONFIG_GET(pumping_diff_hist); }
+  temp_t diff_h2s_off  () { return diff_h2s_on() - CONFIG_GET(pumping_diff_hist); }
   temp_t diff_s2h_on   () { return CONFIG_GET(pumping_diff_s2h ); }
-  temp_t diff_s2h_off  () { return diff_s2h_on + CONFIG_GET(pumping_diff_hist); }
+  temp_t diff_s2h_off  () { return diff_s2h_on() - CONFIG_GET(pumping_diff_hist); }
   temp_t diff          () { return t_house_s_t - t_stable_s_t; }
   bool diff_h2s        () { return  diff() >= diff_h2s_on() || (pumping_state == PUMPING_H2S &&  diff() >= diff_h2s_off()); }
   bool diff_s2h        () { return -diff() >= diff_s2h_on() || (pumping_state == PUMPING_S2H && -diff() >= diff_s2h_off()); }
