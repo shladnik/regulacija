@@ -85,7 +85,7 @@
   <radiator_goal format="s7.8" reset="23.0">
     Zeljena temperatura ogrevanja.
   </radiator_goal>
-  <collector_diff_on format="s7.8" reset="10.0">
+  <collector_diff_on format="s7.8" reset="9.0">
     Razlika temperatur pri kateri naj se crpalka prizge.
   </collector_diff_on>
   <collector_diff_off format="s7.8" reset="5.0">

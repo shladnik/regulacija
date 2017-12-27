@@ -20,9 +20,9 @@ void pumping_loop()
   temp_t t_stable_s_t = tab[4];
   temp_t t_collector  = tab[5];
 
-  CONFIG static temp_t pumping_diff_h2s  = TEMP(20);
+  CONFIG static temp_t pumping_diff_h2s  = TEMP(5);
   CONFIG static temp_t pumping_diff_s2h  = TEMP(5);
-  CONFIG static temp_t pumping_diff_hist = TEMP(3);
+  CONFIG static temp_t pumping_diff_hist = TEMP(2);
 
   temp_t diff_h2s_on   () { return CONFIG_GET(pumping_diff_h2s ); }
   temp_t diff_h2s_off  () { return diff_h2s_on() - CONFIG_GET(pumping_diff_hist); }
@@ -31,21 +31,21 @@ void pumping_loop()
   temp_t diff          () { return t_house_s_t - t_stable_s_t; }
   bool diff_h2s        () { return  diff() >= diff_h2s_on() || (pumping_state == PUMPING_H2S &&  diff() >= diff_h2s_off()); }
   bool diff_s2h        () { return -diff() >= diff_s2h_on() || (pumping_state == PUMPING_S2H && -diff() >= diff_s2h_off()); }
-  CONFIG static temp_t pumping_furnace_t_th = TEMP(78);
-  CONFIG static temp_t pumping_house_s_b_th = TEMP(72);
-  bool furnace         () { return t_furnace_t >= CONFIG_GET(pumping_furnace_t_th) && t_house_s_b >= CONFIG_GET(pumping_house_s_b_th); }
-  bool collector       () { return t_collector > MIN(t_house_s_b, t_stable_s_b) && t_house_s_b < t_stable_s_b; }
+  //CONFIG static temp_t pumping_furnace_t_th = TEMP(78);
+  //CONFIG static temp_t pumping_house_s_b_th = TEMP(72);
+  //bool furnace         () { return t_furnace_t >= CONFIG_GET(pumping_furnace_t_th) && t_house_s_b >= CONFIG_GET(pumping_house_s_b_th); }
+  //bool collector       () { return t_collector > MIN(t_house_s_b, t_stable_s_b) && t_house_s_b < t_stable_s_b; }
   //date_t mms = (date_t){ 0, 0,  3, -1, -1, -1, -1 };
   //date_t mme = (date_t){ 0, 0,  6, -1, -1, -1, -1 };
   //date_t mes = (date_t){ 0, 0, 16, -1, -1, -1, -1 };
   //date_t mee = (date_t){ 0, 0, 19, -1, -1, -1, -1 };
   //bool milking_time    () { return (timecmp_lt(mms, date) && timecmp_ge(mme, date)) || (timecmp_lt(mes, date) && timecmp_ge(mee, date)); }
   //bool milking_time    () { return 1; }
-  bool h2s             () { /*return  milking_time() &&*/ diff_h2s(); }
-  bool s2h             () { /*return !milking_time() &&*/ diff_s2h(); }
+  bool h2s             () { return /* milking_time() &&*/ diff_h2s(); }
+  bool s2h             () { return /*!milking_time() &&*/ diff_s2h(); }
   
-  if      (furnace()   || h2s()) pumping_state = PUMPING_H2S;
-  else if (collector() || s2h()) pumping_state = PUMPING_S2H;
+  if      (/*furnace()   ||*/ h2s()) pumping_state = PUMPING_H2S;
+  else if (/*collector() ||*/ s2h()) pumping_state = PUMPING_S2H;
   else                                           pumping_state = PUMPING_IDLE;
   
   switch (pumping_state) {

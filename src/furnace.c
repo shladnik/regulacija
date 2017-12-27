@@ -26,8 +26,8 @@ void furnace_loop()
     valve_open(VALVE_FURNACE);
     DBG_CNT(furnace_failback);
   } else {
-    CONFIG static temp_t furnace_goal_in  = TEMP(70);
-    CONFIG static temp_t furnace_goal_out = TEMP(80);
+    CONFIG static temp_t furnace_goal_in  = TEMP(64);
+    CONFIG static temp_t furnace_goal_out = TEMP(73);
     temp_t goal_in  = CONFIG_GET(furnace_goal_in );
     temp_t goal_out = CONFIG_GET(furnace_goal_out);
     
