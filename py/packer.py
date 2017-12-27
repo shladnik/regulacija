@@ -1,7 +1,6 @@
 import os
 import tarfile
 import pickle
-import gum
 
 def pack(timestamp = None):
   files = (
@@ -44,6 +43,7 @@ def update(a):
   a.extractall() # TODO: local update, remote update?
   names = a.getnames()
   if "bootloader.bin" in names or "fw.bin" in names:
+    import gum
     gumi = gum.Gum()
     if "bootloader.bin" in names: gumi.flash_bootloader(open("bootloader.bin", 'rb'))
     if "fw.bin"         in names: gumi.flash_fw        (open("fw.bin"        , 'rb'))
